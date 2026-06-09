@@ -8,6 +8,8 @@ from app.models import UserRole
 class TagBase(BaseModel):
     name: str = Field(..., max_length=50)
     category: str = Field(..., max_length=50)
+    value: Optional[int] = 0
+    sort_order: Optional[int] = 0
     description: Optional[str] = None
 
 
@@ -160,6 +162,7 @@ class RecipeUpdate(BaseModel):
 
 class RecipeResponse(RecipeBase):
     id: int
+    profession_type_label: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     

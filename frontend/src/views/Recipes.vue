@@ -22,12 +22,14 @@
               </el-input>
             </el-col>
             <el-col :span="6">
-              <el-select v-model="category" placeholder="选择分类" clearable @change="loadRecipes">
+              <el-select v-model="professionType" placeholder="选择副职类型" clearable @change="loadRecipes">
                 <el-option label="全部" value="" />
-                <el-option label="武器" value="weapon" />
-                <el-option label="防具" value="armor" />
-                <el-option label="药品" value="potion" />
-                <el-option label="其他" value="other" />
+                <el-option 
+                  v-for="tag in professionTags" 
+                  :key="tag.value" 
+                  :label="tag.name" 
+                  :value="tag.value" 
+                />
               </el-select>
             </el-col>
             <el-col :span="4">
@@ -39,16 +41,21 @@
         <!-- 配方列表 -->
         <el-card class="list-card">
           <el-table :data="recipes" v-loading="loading" stripe>
-            <el-table-column prop="name" label="配方名称" min-width="150">
+            <el-table-column prop="name" label="配方名称" min-width="200">
               <template #default="{ row }">
                 <span class="recipe-link" @click="showDetail(row)">
                   {{ row.name }}
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="category" label="分类" width="100" />
+            <el-table-column prop="profession_type_label" label="副职类型" width="120">
+              <template #default="{ row }">
+                <el-tag :type="getProfessionType(row.profession_type)">
+                  {{ row.profession_type_label || '未知' }}
+                </el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="level_required" label="所需等级" width="100" />
-            <el-table-column prop="result" label="制作结果" min-width="150" />
             <el-table-column label="操作" width="250" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" @click="showDetail(row)">
@@ -91,6 +98,7 @@
         <el-descriptions v-if="currentRecipe" :column="2" border>
           <el-descriptions-item label="配方名称">{{ currentRecipe.name }}</el-descriptions-item>
           <el-descriptions-item label="分类">{{ currentRecipe.category || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="副职类型">{{ currentRecipe.profession_type_label || '-' }}</el-descriptions-item>
           <el-descriptions-item label="所需等级">{{ currentRecipe.level_required }}</el-descriptions-item>
           <el-descriptions-item label="制作结果">{{ currentRecipe.result || '-' }}</el-descriptions-item>
           <el-descriptions-item label="创建时间" :span="2">
@@ -176,13 +184,29 @@ import { ref, onMounted } from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import { getRecipes, getRecipeById, updateRecipe, deleteRecipe } from '@/api/recipe'
+import { getAllTags } from '@/api/item'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
+
+// 副职类型标签列表（从tag获取）
+const professionTags = ref([])
+
+// 副职类型对应的tag类型
+const getProfessionType = (type) => {
+  const typeMap = {
+    1: 'success',  // 庖丁
+    2: 'primary',  // 工匠
+    3: 'warning',  // 巧匠
+    4: 'danger',   // 玉匠
+    5: 'info'      // 书匠
+  }
+  return typeMap[type] || 'default'
+}
 
 const recipes = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
-const category = ref('')
+const professionType = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
@@ -222,12 +246,15 @@ const loadRecipes = async () => {
       limit: pageSize.value
     }
     
-    if (category.value) {
-      params.category = category.value
+    if (searchQuery.value) {
+      params.name = searchQuery.value
+    }
+    
+    if (professionType.value) {
+      params.profession_type = parseInt(professionType.value)
     }
     
     const res = await getRecipes(params)
-    // 后端返回格式: { total: number, items: array }
     recipes.value = res.items || []
     total.value = res.total || 0
   } catch (error) {
@@ -333,7 +360,18 @@ const handleDelete = async (row) => {
   }
 }
 
+// 加载副职类型标签
+const loadProfessionTags = async () => {
+  try {
+    const res = await getAllTags({ category: 'profession_type' })
+    professionTags.value = (res.items || []).sort((a, b) => a.value - b.value)
+  } catch (error) {
+    console.error('加载副职类型标签失败:', error)
+  }
+}
+
 onMounted(() => {
+  loadProfessionTags()
   loadRecipes()
 })
 </script>

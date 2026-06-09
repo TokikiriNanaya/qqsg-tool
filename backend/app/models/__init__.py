@@ -31,7 +31,9 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False, comment="标签名称")
-    category = Column(String(50), nullable=False, comment="标签分类（如：获取来源、用途）")
+    category = Column(String(50), nullable=False, comment="标签分类（如：获取来源、用途、profession_type）")
+    value = Column(Integer, default=0, comment="标签值（用于数字映射，如副职类型）")
+    sort_order = Column(Integer, default=0, comment="排序号（用于控制显示顺序）")
     description = Column(Text, comment="标签描述")
     
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -109,6 +111,3 @@ class Recipe(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
-

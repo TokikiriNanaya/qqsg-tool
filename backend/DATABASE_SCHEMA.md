@@ -37,15 +37,41 @@ CREATE TABLE users (
 CREATE TABLE tags (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) UNIQUE NOT NULL COMMENT '标签名称',
-    category VARCHAR(50) NOT NULL COMMENT '标签分类',
+    category VARCHAR(50) NOT NULL COMMENT '标签分类（如：获取来源、用途、profession_type）',
+    value INT DEFAULT 0 COMMENT '标签值（用于数字映射，如副职类型）',
+    sort_order INT DEFAULT 0 COMMENT '排序号（用于控制显示顺序，数字越小越靠前）',
     description TEXT COMMENT '标签描述',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     INDEX idx_name (name),
-    INDEX idx_category (category)
+    INDEX idx_category (category),
+    INDEX idx_value (value),
+    INDEX idx_sort_order (sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='标签表';
 ```
+
+### 标签分类说明
+
+| 分类名称 | 说明 |
+|----------|------|
+| profession_type | 副职类型标签，用于映射配方的profession_type字段 |
+| 获取来源 | 物品获取来源标签 |
+| 用途 | 物品用途标签 |
+| 其他 | 其他自定义分类 |
+
+### 副职类型映射（category=profession_type）
+
+管理员可通过tags表配置以下副职类型映射：
+
+| value | 标签名称示例 | 说明 |
+|-------|-------------|------|
+| 0 | 未知 | 默认值 |
+| 1 | 庖丁 | 烹饪 |
+| 2 | 工匠 | 制造工具 |
+| 3 | 巧匠 | 制作饰品 |
+| 4 | 玉匠 | 制作玉石 |
+| 5 | 书匠 | 制作符咒 |
 
 ---
 

@@ -14,6 +14,7 @@
           
           <el-descriptions :column="2" border>
             <el-descriptions-item label="分类">{{ recipe.category }}</el-descriptions-item>
+            <el-descriptions-item label="副职类型">{{ recipe.profession_type_label || '-' }}</el-descriptions-item>
             <el-descriptions-item label="所需等级">{{ recipe.level_required }}</el-descriptions-item>
             <el-descriptions-item label="制作结果">{{ recipe.result }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ formatDate(recipe.created_at) }}</el-descriptions-item>

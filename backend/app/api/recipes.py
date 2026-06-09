@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
-from app.models import Recipe, User, UserRole
+from app.models import Recipe, User, UserRole, Tag
 from app.schemas import RecipeCreate, RecipeUpdate, RecipeResponse
 from app.api.auth import get_current_user
 from pydantic import BaseModel
@@ -31,6 +31,20 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)):
             detail="权限不足，需要管理员权限"
         )
     return current_user
+
+
+def get_profession_type_map(db: Session):
+    """获取副职类型标签映射"""
+    tags = db.query(Tag).filter(Tag.category == "profession_type").all()
+    return {tag.value: tag.name for tag in tags}
+
+
+def add_profession_type_label(recipe, profession_map):
+    """为配方添加副职类型标签名称"""
+    recipe_dict = recipe.__dict__ if hasattr(recipe, '__dict__') else dict(recipe)
+    profession_type = recipe.profession_type if hasattr(recipe, 'profession_type') else recipe.get('profession_type')
+    recipe_dict['profession_type_label'] = profession_map.get(profession_type, "未知")
+    return recipe_dict
 
 
 @router.get("/", response_model=RecipeListResponse)
@@ -63,9 +77,15 @@ def list_recipes(
     # 获取分页数据
     recipes = query.offset(skip).limit(limit).all()
     
+    # 获取副职类型映射
+    profession_map = get_profession_type_map(db)
+    
+    # 添加副职类型标签名称
+    recipes_with_label = [add_profession_type_label(r, profession_map) for r in recipes]
+    
     return {
         "total": total,
-        "items": recipes
+        "items": recipes_with_label
     }
 
 
@@ -75,7 +95,12 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     if not recipe:
         raise HTTPException(status_code=404, detail="配方不存在")
-    return recipe
+    
+    # 获取副职类型映射
+    profession_map = get_profession_type_map(db)
+    
+    # 添加副职类型标签名称
+    return add_profession_type_label(recipe, profession_map)
 
 
 @router.post("/", response_model=RecipeResponse)
