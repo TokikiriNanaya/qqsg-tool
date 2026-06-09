@@ -5,8 +5,15 @@ from app.core.database import get_db
 from app.models import Recipe, User, UserRole
 from app.schemas import RecipeCreate, RecipeUpdate, RecipeResponse
 from app.api.auth import get_current_user
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/recipes", tags=["配方"])
+
+
+# 配方列表响应模型
+class RecipeListResponse(BaseModel):
+    total: int
+    items: List[RecipeResponse]
 
 
 def get_current_active_user(current_user: User = Depends(get_current_user)):
@@ -26,7 +33,7 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/", response_model=List[RecipeResponse])
+@router.get("/", response_model=RecipeListResponse)
 def list_recipes(
     skip: int = 0,
     limit: int = 100,
@@ -50,8 +57,16 @@ def list_recipes(
     if profession_type is not None:
         query = query.filter(Recipe.profession_type == profession_type)
     
+    # 获取总数
+    total = query.count()
+    
+    # 获取分页数据
     recipes = query.offset(skip).limit(limit).all()
-    return recipes
+    
+    return {
+        "total": total,
+        "items": recipes
+    }
 
 
 @router.get("/{recipe_id}", response_model=RecipeResponse)

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from typing import List
+from pydantic import BaseModel
 from app.core.database import get_db
 from app.core.security import get_password_hash, create_access_token, create_refresh_token, verify_password, decode_token
 from app.models import User, UserRole
@@ -11,6 +13,12 @@ from app.core.config import settings
 router = APIRouter(prefix="/auth", tags=["认证"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+
+# 用户列表响应模型
+class UserListResponse(BaseModel):
+    total: int
+    items: List[UserResponse]
 
 
 def get_current_user(
@@ -111,3 +119,62 @@ def get_current_user_info(
 ):
     """获取当前用户信息"""
     return current_user
+
+
+@router.get("/users", response_model=UserListResponse)
+def list_users(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取用户列表（仅管理员）"""
+    # 检查是否为管理员
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="权限不足，需要管理员权限"
+        )
+    
+    # 获取总数
+    total = db.query(User).count()
+    
+    # 获取分页数据
+    users = db.query(User).offset(skip).limit(limit).all()
+    
+    return {
+        "total": total,
+        "items": users
+    }
+
+
+@router.put("/users/{user_id}/status", response_model=UserResponse)
+def update_user_status(
+    user_id: int,
+    status_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """更新用户状态（仅管理员）"""
+    # 检查是否为管理员
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="权限不足，需要管理员权限"
+        )
+    
+    # 查找用户
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    
+    # 不能禁用自己
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="不能禁用自己")
+    
+    # 更新状态
+    user.is_active = status_data.get("is_active", user.is_active)
+    db.commit()
+    db.refresh(user)
+    
+    return user
