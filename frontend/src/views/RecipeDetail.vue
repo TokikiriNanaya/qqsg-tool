@@ -117,6 +117,12 @@ onMounted(() => {
 <style scoped>
 .recipe-detail {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.el-main {
+  flex: 1;
 }
 
 .container {

@@ -27,28 +27,44 @@ request.interceptors.response.use(
     return response.data
   },
   error => {
+    // 检查是否配置了静默错误
+    const silentError = error.config?.silentError
+    
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          ElMessage.error('未授权，请登录')
+          if (!silentError) {
+            ElMessage.error('未授权，请登录')
+          }
+          // 清除token，但不在此处跳转，由路由守卫处理
           localStorage.removeItem('access_token')
           localStorage.removeItem('refresh_token')
-          router.push('/login')
+          localStorage.removeItem('user_info')
           break
         case 403:
-          ElMessage.error('权限不足')
+          if (!silentError) {
+            ElMessage.error('权限不足')
+          }
           break
         case 404:
-          ElMessage.error('请求的资源不存在')
+          if (!silentError) {
+            ElMessage.error('请求的资源不存在')
+          }
           break
         case 500:
-          ElMessage.error('服务器错误')
+          if (!silentError) {
+            ElMessage.error('服务器错误')
+          }
           break
         default:
-          ElMessage.error(error.response.data.detail || '请求失败')
+          if (!silentError) {
+            ElMessage.error(error.response.data.detail || '请求失败')
+          }
       }
     } else {
-      ElMessage.error('网络错误')
+      if (!silentError) {
+        ElMessage.error('网络错误')
+      }
     }
     return Promise.reject(error)
   }

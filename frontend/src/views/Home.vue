@@ -59,8 +59,19 @@ import Footer from '@/components/Footer.vue'
   min-height: 100vh;
 }
 
+.el-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .el-header {
   padding: 0;
+  flex-shrink: 0;
+}
+
+.el-main {
+  flex: 1;
 }
 
 .hero-section {
