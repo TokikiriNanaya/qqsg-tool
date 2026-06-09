@@ -54,9 +54,8 @@ class Item(Base):
     """物品模型"""
     __tablename__ = "items"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, nullable=False, comment="游戏内ID")
     name = Column(String(100), nullable=False, comment="物品名称")
-    game_id = Column(Integer, unique=True, index=True, comment="游戏中的ID")
     description = Column(Text, comment="物品简介")
     bag_limit = Column(Integer, default=999, comment="背包携带上限")
     warehouse_limit = Column(Integer, default=9999, comment="仓库存放上限")

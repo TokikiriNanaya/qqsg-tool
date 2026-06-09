@@ -58,11 +58,11 @@ def create_item(
     current_user: User = Depends(get_current_admin_user)
 ):
     """创建新物品（仅管理员）"""
-    # 检查游戏ID是否已存在
-    if item.game_id and db.query(Item).filter(Item.game_id == item.game_id).first():
+    # 检查物品ID是否已存在
+    if db.query(Item).filter(Item.id == item.id).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="游戏ID已存在"
+            detail="物品ID已存在"
         )
     
     db_item = Item(**item.dict(exclude={'tag_ids'}))

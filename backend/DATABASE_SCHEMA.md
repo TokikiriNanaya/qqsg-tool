@@ -68,9 +68,8 @@ CREATE TABLE item_tags (
 
 ```sql
 CREATE TABLE items (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY COMMENT '游戏内ID（原game_id）',
     name VARCHAR(100) NOT NULL COMMENT '物品名称',
-    game_id VARCHAR(50) UNIQUE COMMENT '游戏内ID',
     description TEXT COMMENT '物品简介',
     bag_limit INT DEFAULT 99 COMMENT '背包上限',
     warehouse_limit INT DEFAULT 999 COMMENT '仓库上限',

@@ -26,8 +26,8 @@ class TagResponse(TagBase):
 
 # 物品相关Schema
 class ItemBase(BaseModel):
+    id: int = Field(...)
     name: str = Field(..., max_length=100)
-    game_id: Optional[int] = Field(None, max_length=50)
     description: Optional[str] = None
     bag_limit: Optional[int] = Field(99, ge=1)
     warehouse_limit: Optional[int] = Field(999, ge=1)
@@ -39,7 +39,6 @@ class ItemCreate(ItemBase):
 
 class ItemUpdate(BaseModel):
     name: Optional[str] = None
-    game_id: Optional[int] = None
     description: Optional[str] = None
     bag_limit: Optional[int] = None
     warehouse_limit: Optional[int] = None
