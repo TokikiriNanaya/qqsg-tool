@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
-from app.models import Recipe, User, UserRole, Tag
+from app.models import Recipe, User, UserRole, Tag, Item
 from app.schemas import RecipeCreate, RecipeUpdate, RecipeResponse
 from app.api.auth import get_current_user
 from pydantic import BaseModel
@@ -47,6 +47,34 @@ def add_profession_type_label(recipe, profession_map):
     return recipe_dict
 
 
+def add_material_names(recipe, db: Session):
+    """为配方添加材料名称"""
+    recipe_dict = recipe.__dict__ if hasattr(recipe, '__dict__') else dict(recipe)
+    
+    # 查询所有材料ID对应的物品名称
+    material_ids = [
+        recipe_dict.get('material1_id', 0),
+        recipe_dict.get('material2_id', 0),
+        recipe_dict.get('material3_id', 0)
+    ]
+    
+    # 获取物品ID到名称的映射
+    items = db.query(Item).filter(Item.id.in_(material_ids)).all()
+    item_map = {item.id: item.name for item in items}
+    
+    # 添加材料名称
+    recipe_dict['material1_name'] = item_map.get(recipe_dict.get('material1_id', 0), '')
+    recipe_dict['material2_name'] = item_map.get(recipe_dict.get('material2_id', 0), '')
+    recipe_dict['material3_name'] = item_map.get(recipe_dict.get('material3_id', 0), '')
+    
+    # 添加产出物品名称
+    result_item_id = recipe_dict.get('result_item_id', 0)
+    result_item = db.query(Item).filter(Item.id == result_item_id).first()
+    recipe_dict['result_item_name'] = result_item.name if result_item else ''
+    
+    return recipe_dict
+
+
 @router.get("/", response_model=RecipeListResponse)
 def list_recipes(
     skip: int = 0,
@@ -54,10 +82,15 @@ def list_recipes(
     name: Optional[str] = None,
     level_required: Optional[int] = None,
     profession_type: Optional[int] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
 ):
     """获取配方列表（所有用户可访问）"""
     query = db.query(Recipe)
+    
+    # 非管理员不能看到被禁用的配方
+    if not current_user or current_user.role != UserRole.ADMIN:
+        query = query.filter(Recipe.is_ban != 1)
     
     # 按名称搜索
     if name:
@@ -80,8 +113,8 @@ def list_recipes(
     # 获取副职类型映射
     profession_map = get_profession_type_map(db)
     
-    # 添加副职类型标签名称
-    recipes_with_label = [add_profession_type_label(r, profession_map) for r in recipes]
+    # 添加副职类型标签名称和材料名称
+    recipes_with_label = [add_material_names(add_profession_type_label(r, profession_map), db) for r in recipes]
     
     return {
         "total": total,
@@ -90,17 +123,26 @@ def list_recipes(
 
 
 @router.get("/{recipe_id}", response_model=RecipeResponse)
-def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
+def get_recipe(
+    recipe_id: int, 
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
     """获取单个配方详情（所有用户可访问）"""
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     if not recipe:
         raise HTTPException(status_code=404, detail="配方不存在")
     
+    # 非管理员不能看到被禁用的配方
+    if recipe.is_ban == 1 and (not current_user or current_user.role != UserRole.ADMIN):
+        raise HTTPException(status_code=404, detail="配方不存在")
+    
     # 获取副职类型映射
     profession_map = get_profession_type_map(db)
     
-    # 添加副职类型标签名称
-    return add_profession_type_label(recipe, profession_map)
+    # 添加副职类型标签名称和材料名称
+    recipe_dict = add_material_names(add_profession_type_label(recipe, profession_map), db)
+    return recipe_dict
 
 
 @router.post("/", response_model=RecipeResponse)
@@ -110,13 +152,17 @@ def create_recipe(
     current_user: User = Depends(get_current_admin_user)
 ):
     """创建新配方（仅管理员）"""
-    # 检查ID是否已存在
-    existing = db.query(Recipe).filter(Recipe.id == recipe.result_item_id).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="该配方ID已存在")
+    # 将 None 转为 0
+    recipe_dict = recipe.dict()
+    for key, value in recipe_dict.items():
+        if value is None:
+            recipe_dict[key] = 0
+    
+    # 移除 id，让数据库自动生成
+    recipe_dict.pop('id', None)
     
     # 创建配方
-    db_recipe = Recipe(**recipe.dict())
+    db_recipe = Recipe(**recipe_dict)
     db.add(db_recipe)
     db.commit()
     db.refresh(db_recipe)
@@ -135,9 +181,11 @@ def update_recipe(
     if not db_recipe:
         raise HTTPException(status_code=404, detail="配方不存在")
     
-    # 更新基本字段
+    # 更新基本字段，将 None 转为 0
     update_data = recipe.dict(exclude_unset=True)
     for key, value in update_data.items():
+        if value is None:
+            value = 0
         setattr(db_recipe, key, value)
     
     db.commit()
@@ -159,3 +207,81 @@ def delete_recipe(
     db.delete(db_recipe)
     db.commit()
     return {"message": "配方删除成功"}
+
+
+# 添加一个响应模型用于物品配方树
+class ItemRecipeTreeResponse(BaseModel):
+    recipes_by_material: List[RecipeResponse] = []  # 作为材料的配方
+    recipes_as_result: List[RecipeResponse] = []  # 作为产物的配方
+
+
+@router.get("/by-material/", response_model=RecipeListResponse)
+def get_recipes_by_material(
+    material_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """根据材料ID获取相关配方（所有用户可访问）"""
+    # 查询使用该材料的配方
+    query = db.query(Recipe).filter(
+        (Recipe.material1_id == material_id) |
+        (Recipe.material2_id == material_id) |
+        (Recipe.material3_id == material_id)
+    )
+    
+    # 非管理员不能看到被禁用的配方
+    if not current_user or current_user.role != UserRole.ADMIN:
+        query = query.filter(Recipe.is_ban != 1)
+    
+    recipes = query.all()
+    
+    # 获取副职类型映射
+    profession_map = get_profession_type_map(db)
+    
+    # 添加副职类型标签名称和材料名称
+    recipes_with_label = [add_material_names(add_profession_type_label(r, profession_map), db) for r in recipes]
+    
+    return {
+        "total": len(recipes_with_label),
+        "items": recipes_with_label
+    }
+
+
+@router.get("/item-tree/{item_id}")
+def get_item_recipe_tree(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """获取物品的配方树（上下结构：制作配方 + 可制作配方）"""
+    # 获取作为材料的配方（可制作配方）
+    query_material = db.query(Recipe).filter(
+        (Recipe.material1_id == item_id) |
+        (Recipe.material2_id == item_id) |
+        (Recipe.material3_id == item_id)
+    )
+    
+    # 获取作为产物的配方（制作配方）
+    query_result = db.query(Recipe).filter(
+        Recipe.result_item_id == item_id
+    )
+    
+    # 非管理员不能看到被禁用的配方
+    if not current_user or current_user.role != UserRole.ADMIN:
+        query_material = query_material.filter(Recipe.is_ban != 1)
+        query_result = query_result.filter(Recipe.is_ban != 1)
+    
+    recipes_as_material = query_material.all()
+    recipes_as_result = query_result.all()
+    
+    # 获取副职类型映射
+    profession_map = get_profession_type_map(db)
+    
+    # 处理配方
+    recipes_material_list = [add_material_names(add_profession_type_label(r, profession_map), db) for r in recipes_as_material]
+    recipes_result_list = [add_material_names(add_profession_type_label(r, profession_map), db) for r in recipes_as_result]
+    
+    return {
+        "recipes_by_material": recipes_material_list,
+        "recipes_as_result": recipes_result_list
+    }

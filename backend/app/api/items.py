@@ -42,6 +42,22 @@ def list_items(
     return items
 
 
+@router.get("/search")
+def search_items(
+    q: str = "",
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """搜索物品（所有用户可访问）"""
+    query = db.query(Item)
+    
+    if q:
+        query = query.filter(Item.name.like(f"%{q}%"))
+    
+    items = query.limit(limit).all()
+    return [{"id": item.id, "name": item.name} for item in items]
+
+
 @router.get("/{item_id}", response_model=ItemResponse)
 def get_item(item_id: int, db: Session = Depends(get_db)):
     """获取单个物品详情（所有用户可访问）"""

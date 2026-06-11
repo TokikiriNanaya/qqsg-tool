@@ -73,7 +73,7 @@ class Recipe(Base):
     """配方模型 - 对应 MixData.txt 数据"""
     __tablename__ = "recipes"
 
-    id = Column(Integer, primary_key=True, index=True, comment="序号")
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="序号")
     name = Column(String(200), nullable=False, comment="名称")
     description = Column(Text, comment="简介")
     level_required = Column(Integer, default=0, comment="制作所需等级")
@@ -107,7 +107,7 @@ class Recipe(Base):
     unknown03 = Column(Integer, default=0, comment="unknown03")
     profession_type = Column(Integer, default=0, comment="副职类型")
     unknown04 = Column(Integer, default=0, comment="unknown04")
-    unknown05 = Column(Integer, default=0, comment="unknown05")
+    is_ban = Column(Integer, default=0, comment="是否禁用（1=禁用）")
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

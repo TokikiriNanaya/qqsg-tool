@@ -105,9 +105,9 @@ class RecipeBase(BaseModel):
     level_required: int = 0
     
     # 材料ID
-    material1_id: int = 0
-    material2_id: int = 0
-    material3_id: int = 0
+    material1_id: Optional[int] = 0
+    material2_id: Optional[int] = 0
+    material3_id: Optional[int] = 0
     
     # 材料数量
     material1_quantity: int = 0
@@ -118,11 +118,11 @@ class RecipeBase(BaseModel):
     lucky_probability: int = 0
     
     # 产出物品
-    result_item_id: int
+    result_item_id: Optional[int] = 0
     result_quantity: int = 1
     
     # 幸运合成产出
-    lucky_result_item_id: int = 0
+    lucky_result_item_id: Optional[int] = 0
     lucky_result_quantity: int = 0
     
     # 其他字段
@@ -133,7 +133,7 @@ class RecipeBase(BaseModel):
     unknown03: int = 0
     profession_type: int = 0
     unknown04: int = 0
-    unknown05: int = 0
+    is_ban: int = 0
 
 
 class RecipeCreate(RecipeBase):
@@ -158,11 +158,16 @@ class RecipeUpdate(BaseModel):
     profession_level_bonus: Optional[int] = None
     vitality_cost: Optional[int] = None
     profession_type: Optional[int] = None
+    is_ban: Optional[int] = None
 
 
 class RecipeResponse(RecipeBase):
     id: int
     profession_type_label: Optional[str] = None
+    material1_name: Optional[str] = None
+    material2_name: Optional[str] = None
+    material3_name: Optional[str] = None
+    result_item_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     

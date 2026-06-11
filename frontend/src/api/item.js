@@ -97,3 +97,12 @@ export function deleteTag(id) {
     method: 'delete'
   })
 }
+
+// 搜索物品
+export function searchItems(query) {
+  return request({
+    url: '/items/search',
+    method: 'get',
+    params: { q: query, limit: 50 }
+  })
+}

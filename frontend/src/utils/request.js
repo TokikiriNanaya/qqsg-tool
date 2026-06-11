@@ -7,6 +7,40 @@ const request = axios.create({
   timeout: 10000
 })
 
+// 标记是否正在刷新token
+let isRefreshing = false
+// 存储在token刷新期间等待的请求
+let refreshSubscribers = []
+
+// 添加请求到刷新队列
+const subscribeTokenRefresh = (callback) => {
+  refreshSubscribers.push(callback)
+}
+
+// 通知所有等待的请求token已刷新
+const onTokenRefreshed = (token) => {
+  refreshSubscribers.forEach(callback => callback(token))
+  refreshSubscribers = []
+}
+
+// 刷新token
+const refreshToken = async () => {
+  const refreshToken = localStorage.getItem('refresh_token')
+  if (!refreshToken) {
+    return null
+  }
+  
+  try {
+    const response = await axios.post('/api/auth/refresh', { refresh_token: refreshToken })
+    const newToken = response.data.access_token
+    localStorage.setItem('access_token', newToken)
+    return newToken
+  } catch (error) {
+    console.error('Token刷新失败:', error)
+    return null
+  }
+}
+
 // 请求拦截器
 request.interceptors.request.use(
   config => {
@@ -26,20 +60,54 @@ request.interceptors.response.use(
   response => {
     return response.data
   },
-  error => {
+  async error => {
     // 检查是否配置了静默错误
     const silentError = error.config?.silentError
     
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          if (!silentError) {
-            ElMessage.error('未授权，请登录')
+          // 如果不是刷新token的请求，尝试刷新token
+          if (!error.config.url.includes('/auth/refresh') && !error.config.url.includes('/auth/login')) {
+            if (isRefreshing) {
+              // 正在刷新，等待刷新完成后重试
+              return new Promise((resolve, reject) => {
+                subscribeTokenRefresh(token => {
+                  error.config.headers.Authorization = `Bearer ${token}`
+                  resolve(request(error.config))
+                })
+              })
+            }
+            
+            isRefreshing = true
+            const newToken = await refreshToken()
+            
+            if (newToken) {
+              onTokenRefreshed(newToken)
+              isRefreshing = false
+              // 重试原请求
+              error.config.headers.Authorization = `Bearer ${newToken}`
+              return request(error.config)
+            } else {
+              isRefreshing = false
+              if (!silentError) {
+                ElMessage.error('登录已过期，请重新登录')
+              }
+              localStorage.removeItem('access_token')
+              localStorage.removeItem('refresh_token')
+              localStorage.removeItem('user_info')
+              router.push('/login')
+            }
+          } else {
+            // 刷新token的请求失败
+            if (!silentError) {
+              ElMessage.error('登录已过期，请重新登录')
+            }
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('refresh_token')
+            localStorage.removeItem('user_info')
+            router.push('/login')
           }
-          // 清除token，但不在此处跳转，由路由守卫处理
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          localStorage.removeItem('user_info')
           break
         case 403:
           if (!silentError) {

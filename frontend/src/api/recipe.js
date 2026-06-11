@@ -42,3 +42,20 @@ export function deleteRecipe(id) {
     method: 'delete'
   })
 }
+
+// 根据材料ID获取配方（用于显示物品配方树）
+export function getRecipesByMaterial(materialId) {
+  return request({
+    url: '/recipes/by-material/',
+    method: 'get',
+    params: { material_id: materialId }
+  })
+}
+
+// 获取物品配方树（上下结构）
+export function getItemRecipeTree(itemId) {
+  return request({
+    url: `/recipes/item-tree/${itemId}`,
+    method: 'get'
+  })
+}

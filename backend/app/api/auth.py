@@ -113,6 +113,52 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/refresh")
+def refresh_token(
+    refresh_token: str,
+    db: Session = Depends(get_db)
+):
+    """使用refresh_token刷新access_token"""
+    payload = decode_token(refresh_token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="刷新令牌无效或已过期"
+        )
+    
+    username: str = payload.get("sub")
+    if username is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="刷新令牌无效"
+        )
+    
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户不存在"
+        )
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="账户已被禁用"
+        )
+    
+    # 生成新的access_token
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username, "role": user.role.value},
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(
     current_user: User = Depends(get_current_user)
