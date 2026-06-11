@@ -99,10 +99,14 @@ export function deleteTag(id) {
 }
 
 // 搜索物品
-export function searchItems(query) {
+export function searchItems(query, limit = null) {
+  const params = { q: query }
+  if (limit !== null && limit !== undefined) {
+    params.limit = limit
+  }
   return request({
     url: '/items/search',
     method: 'get',
-    params: { q: query, limit: 50 }
+    params: params
   })
 }

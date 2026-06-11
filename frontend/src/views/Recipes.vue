@@ -230,10 +230,7 @@
                   :key="item.id"
                   :label="item.name"
                   :value="item.id"
-                >
-                  <span>{{ item.name }}</span>
-                  <span class="item-id">(ID: {{ item.id }})</span>
-                </el-option>
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -262,10 +259,7 @@
                   :key="item.id"
                   :label="item.name"
                   :value="item.id"
-                >
-                  <span>{{ item.name }}</span>
-                  <span class="item-id">(ID: {{ item.id }})</span>
-                </el-option>
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -294,10 +288,7 @@
                   :key="item.id"
                   :label="item.name"
                   :value="item.id"
-                >
-                  <span>{{ item.name }}</span>
-                  <span class="item-id">(ID: {{ item.id }})</span>
-                </el-option>
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -321,16 +312,14 @@
                 :remote-method="(query) => doSearchItems(query, 'result')"
                 :loading="itemSearchLoading['result']"
                 class="full-width"
+                clearable
               >
                 <el-option
                   v-for="item in itemSearchResults['result']"
                   :key="item.id"
                   :label="item.name"
                   :value="item.id"
-                >
-                  <span>{{ item.name }}</span>
-                  <span class="item-id">(ID: {{ item.id }})</span>
-                </el-option>
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -374,10 +363,7 @@
                   :key="item.id"
                   :label="item.name"
                   :value="item.id"
-                >
-                  <span>{{ item.name }}</span>
-                  <span class="item-id">(ID: {{ item.id }})</span>
-                </el-option>
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -522,6 +508,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 const professionTags = ref([])
 
 // 物品搜索相关
+const allItemsCache = ref([])  // 全局缓存：所有物品列表
 const itemSearchResults = ref({
   1: [], 2: [], 3: [], 'result': [], 'lucky': []
 })
@@ -529,18 +516,60 @@ const itemSearchLoading = ref({
   1: false, 2: false, 3: false, 'result': false, 'lucky': false
 })
 
+// 加载所有物品（带缓存）
+const loadAllItems = async (forceRefresh = false) => {
+  if (!forceRefresh && allItemsCache.value.length > 0) {
+    return allItemsCache.value
+  }
+  try {
+    const res = await searchItems('')
+    allItemsCache.value = res || []
+    return allItemsCache.value
+  } catch (error) {
+    console.error('加载物品列表失败:', error)
+    return []
+  }
+}
+
 // 搜索物品
 const doSearchItems = async (query, key) => {
-  if (!query) {
-    itemSearchResults.value[key] = []
+  // 如果没有输入关键词且已有数据，保留现有数据（用于显示已选物品）
+  if (!query && itemSearchResults.value[key].length > 0) {
     return
   }
+  
+  if (!query) {
+    // 搜索空字符串时：从缓存获取所有物品，或请求后端
+    itemSearchLoading.value[key] = true
+    try {
+      const items = await loadAllItems()
+      itemSearchResults.value[key] = items
+    } catch (error) {
+      console.error('搜索物品失败:', error)
+    } finally {
+      itemSearchLoading.value[key] = false
+    }
+    return
+  }
+  
+  // 有关键词时：在全量物品中做前端搜索（避免频繁请求后端，响应更快）
   itemSearchLoading.value[key] = true
   try {
-    const res = await searchItems(query)
-    itemSearchResults.value[key] = res || []
+    const allItems = await loadAllItems()
+    const lowerQuery = query.toLowerCase()
+    const filtered = allItems.filter(item => 
+      item.name.toLowerCase().includes(lowerQuery) || 
+      String(item.id) === query
+    )
+    itemSearchResults.value[key] = filtered
   } catch (error) {
-    console.error('搜索物品失败:', error)
+    // 降级：回退到后端搜索
+    try {
+      const res = await searchItems(query)
+      itemSearchResults.value[key] = res || []
+    } catch (e) {
+      console.error('搜索物品失败:', e)
+    }
   } finally {
     itemSearchLoading.value[key] = false
   }
@@ -772,7 +801,7 @@ const navigateItemTree = async (itemId, itemName) => {
 
 
 // 显示新增弹窗（仅管理员）
-const showCreate = () => {
+const showCreate = async () => {
   if (!userStore.isAdmin) {
     ElMessage.warning('权限不足')
     return
@@ -800,8 +829,10 @@ const showCreate = () => {
     description: '',
     is_ban: 0
   }
-  // 清空搜索结果
-  itemSearchResults.value = { 1: [], 2: [], 3: [], 'result': [], 'lucky': [] }
+  
+  // 加载所有物品到下拉框
+  await loadItemsForSelect()
+  
   editVisible.value = true
 }
 
@@ -828,30 +859,35 @@ const showEdit = async (row) => {
     lucky_probability: Math.round((row.lucky_probability || 0) / 100),
     result_item_id: row.result_item_id || null,
     result_quantity: row.result_quantity || 1,
-    lucky_result_item_id: row.lucky_result_item_id || null,
+    lucky_result_item_id: row.lucky_result_item_id && row.lucky_result_item_id > 0 ? row.lucky_result_item_id : null,
     lucky_result_quantity: row.lucky_result_quantity || 0,
     profession_level_bonus: Math.round((row.profession_level_bonus || 0) / 100),
     description: row.description || '',
     is_ban: row.is_ban || 0
   }
   
-  // 预加载已选择的物品
-  const itemIds = [row.material1_id, row.material2_id, row.material3_id, row.result_item_id, row.lucky_result_item_id].filter(id => id)
-  if (itemIds.length > 0) {
-    try {
-      const res = await searchItems('')
-      const allItems = res || []
-      if (row.material1_id) itemSearchResults.value[1] = allItems.filter(i => i.id === row.material1_id)
-      if (row.material2_id) itemSearchResults.value[2] = allItems.filter(i => i.id === row.material2_id)
-      if (row.material3_id) itemSearchResults.value[3] = allItems.filter(i => i.id === row.material3_id)
-      if (row.result_item_id) itemSearchResults.value['result'] = allItems.filter(i => i.id === row.result_item_id)
-      if (row.lucky_result_item_id) itemSearchResults.value['lucky'] = allItems.filter(i => i.id === row.lucky_result_item_id)
-    } catch (error) {
-      console.error('预加载物品失败:', error)
-    }
-  }
+  // 预加载所有物品到各个下拉框
+  await loadItemsForSelect()
   
   editVisible.value = true
+}
+
+// 加载所有物品到下拉框（使用缓存，避免重复请求）
+const loadItemsForSelect = async () => {
+  try {
+    const allItems = await loadAllItems()
+    
+    // 为每个下拉框设置物品列表（共享同一份缓存数据）
+    itemSearchResults.value = {
+      1: allItems,
+      2: allItems,
+      3: allItems,
+      'result': allItems,
+      'lucky': allItems
+    }
+  } catch (error) {
+    console.error('加载物品列表失败:', error)
+  }
 }
 
 // 提交编辑/创建
