@@ -32,12 +32,7 @@ const routes = [
     component: () => import('@/views/Items.vue'),
     meta: { title: '物品列表', requiresAuth: false }
   },
-  {
-    path: '/recipes/:id',
-    name: 'RecipeDetail',
-    component: () => import('@/views/RecipeDetail.vue'),
-    meta: { title: '配方详情', requiresAuth: false }
-  },
+
   {
     path: '/admin',
     name: 'Admin',
