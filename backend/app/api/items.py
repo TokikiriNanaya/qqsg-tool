@@ -1,12 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pydantic import BaseModel
 from app.core.database import get_db
-from app.models import Item, Tag, User, UserRole
+from app.models import Item, Tag, User, UserRole, Recipe
 from app.schemas import ItemCreate, ItemUpdate, ItemResponse
 from app.api.auth import get_current_user
 
 router = APIRouter(prefix="/items", tags=["物品"])
+
+
+# 物品列表响应模型
+class ItemListResponse(BaseModel):
+    total: int
+    items: List[ItemResponse]
 
 
 def get_current_admin_user(current_user: User = Depends(get_current_user)):
@@ -19,12 +26,12 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/", response_model=List[ItemResponse])
+@router.get("/", response_model=ItemListResponse)
 def list_items(
     skip: int = 0,
     limit: int = 100,
-    name: str = None,
-    tag_id: int = None,
+    name: Optional[str] = None,
+    tag_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """获取物品列表（所有用户可访问）"""
@@ -38,8 +45,9 @@ def list_items(
     if tag_id:
         query = query.join(Item.tags).filter(Tag.id == tag_id)
     
+    total = query.count()
     items = query.offset(skip).limit(limit).all()
-    return items
+    return {"total": total, "items": items}
 
 
 @router.get("/search")
@@ -77,14 +85,19 @@ def create_item(
     current_user: User = Depends(get_current_admin_user)
 ):
     """创建新物品（仅管理员）"""
-    # 检查物品ID是否已存在
-    if db.query(Item).filter(Item.id == item.id).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="物品ID已存在"
-        )
+    # 如果传入了ID，检查是否已存在
+    if item.id is not None:
+        if db.query(Item).filter(Item.id == item.id).first():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="物品ID已存在"
+            )
     
-    db_item = Item(**item.dict(exclude={'tag_ids'}))
+    # 创建物品（不传id时由数据库自增长）
+    item_data = item.dict(exclude={'tag_ids'})
+    if item.id is None:
+        item_data.pop('id', None)
+    db_item = Item(**item_data)
     
     # 添加标签关联
     if item.tag_ids:
@@ -134,6 +147,22 @@ def delete_item(
     db_item = db.query(Item).filter(Item.id == item_id).first()
     if not db_item:
         raise HTTPException(status_code=404, detail="物品不存在")
+    
+    # 检查该物品是否被用作配方的材料或产出
+    recipes_using_item = db.query(Recipe).filter(
+        (Recipe.material1_id == item_id) |
+        (Recipe.material2_id == item_id) |
+        (Recipe.material3_id == item_id) |
+        (Recipe.result_item_id == item_id) |
+        (Recipe.lucky_result_item_id == item_id)
+    ).all()
+    
+    if recipes_using_item:
+        recipe_names = [recipe.name for recipe in recipes_using_item]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"无法删除物品，该物品正在被以下配方使用：{', '.join(recipe_names)}"
+        )
     
     db.delete(db_item)
     db.commit()

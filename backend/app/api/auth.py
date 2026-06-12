@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from app.core.database import get_db
 from app.core.security import get_password_hash, create_access_token, create_refresh_token, verify_password, decode_token
@@ -13,6 +13,7 @@ from app.core.config import settings
 router = APIRouter(prefix="/auth", tags=["认证"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 
 # 用户列表响应模型
@@ -44,6 +45,26 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     
+    return user
+
+
+def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """获取当前用户（可选，未登录时返回 None）"""
+    if not token:
+        return None
+    
+    payload = decode_token(token)
+    if payload is None:
+        return None
+    
+    username: Optional[str] = payload.get("sub")
+    if username is None:
+        return None
+    
+    user = db.query(User).filter(User.username == username).first()
     return user
 
 

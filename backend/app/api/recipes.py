@@ -4,7 +4,7 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.models import Recipe, User, UserRole, Tag, Item
 from app.schemas import RecipeCreate, RecipeUpdate, RecipeResponse
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, get_current_user_optional
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/recipes", tags=["配方"])
@@ -83,7 +83,7 @@ def list_recipes(
     level_required: Optional[int] = None,
     profession_type: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """获取配方列表（所有用户可访问）"""
     query = db.query(Recipe)
@@ -126,7 +126,7 @@ def list_recipes(
 def get_recipe(
     recipe_id: int, 
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """获取单个配方详情（所有用户可访问）"""
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
@@ -219,7 +219,7 @@ class ItemRecipeTreeResponse(BaseModel):
 def get_recipes_by_material(
     material_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """根据材料ID获取相关配方（所有用户可访问）"""
     # 查询使用该材料的配方
@@ -251,7 +251,7 @@ def get_recipes_by_material(
 def get_item_recipe_tree(
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """获取物品的配方树（上下结构：制作配方 + 可制作配方）"""
     # 获取作为材料的配方（可制作配方）

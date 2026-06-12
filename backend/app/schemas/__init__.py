@@ -19,8 +19,8 @@ class TagCreate(TagBase):
 
 class TagResponse(TagBase):
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -36,6 +36,7 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
+    id: Optional[int] = None  # 创建时可选，数据库自增长
     tag_ids: Optional[List[int]] = None
 
 
@@ -50,8 +51,8 @@ class ItemUpdate(BaseModel):
 class ItemResponse(ItemBase):
     id: int
     tags: List[TagResponse] = []
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -79,7 +80,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     id: int
     is_active: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -168,8 +169,8 @@ class RecipeResponse(RecipeBase):
     material2_name: Optional[str] = None
     material3_name: Optional[str] = None
     result_item_name: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

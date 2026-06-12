@@ -127,7 +127,7 @@
       v-model="tagFormVisible" 
       :title="editingTag ? '编辑标签' : '添加标签'"
       width="500px"
-      :close-on-click-modal="false"
+      :close-on-click-modal="true"
     >
       <el-form :model="tagForm" :rules="tagRules" ref="tagFormRef" label-width="100px">
         <el-form-item label="标签名称" prop="name">

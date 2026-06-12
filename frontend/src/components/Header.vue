@@ -7,6 +7,7 @@
       
       <el-menu mode="horizontal" :ellipsis="false" router>
         <el-menu-item index="/">首页</el-menu-item>
+        <el-menu-item index="/items">物品列表</el-menu-item>
         <el-menu-item index="/recipes">配方列表</el-menu-item>
         <el-menu-item v-if="userStore.isAdmin" index="/admin">管理后台</el-menu-item>
       </el-menu>
