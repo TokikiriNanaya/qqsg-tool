@@ -1,6 +1,6 @@
 <template>
   <div class="items-page">
-    <Header />
+    <Header/>
 
     <el-main>
       <div class="container">
@@ -11,14 +11,16 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-input
-                v-model="searchQuery"
-                placeholder="搜索物品名称"
-                clearable
-                @input="handleSearchInput"
-                @clear="loadItems"
+                  v-model="searchQuery"
+                  placeholder="搜索物品名称"
+                  clearable
+                  @input="handleSearchInput"
+                  @clear="loadItems"
               >
                 <template #prefix>
-                  <el-icon><Search /></el-icon>
+                  <el-icon>
+                    <Search/>
+                  </el-icon>
                 </template>
               </el-input>
             </el-col>
@@ -27,7 +29,10 @@
             </el-col>
             <el-col v-if="userStore.isAdmin" :span="6" class="admin-actions">
               <el-button type="success" @click="showCreate">
-                <el-icon><Plus /></el-icon> 新增物品
+                <el-icon>
+                  <Plus/>
+                </el-icon>
+                新增物品
               </el-button>
             </el-col>
           </el-row>
@@ -36,7 +41,7 @@
         <!-- 物品列表 -->
         <el-card class="list-card">
           <el-table :data="items" v-loading="loading" stripe>
-            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="id" label="ID" width="80"/>
             <el-table-column prop="name" label="物品名称" min-width="200">
               <template #default="{ row }">
                 <span class="item-link" @click="showDetail(row)">
@@ -44,8 +49,8 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="bag_limit" label="背包上限" width="100" />
-            <el-table-column prop="warehouse_limit" label="仓库上限" width="100" />
+            <el-table-column prop="bag_limit" label="背包上限" width="100"/>
+            <el-table-column prop="warehouse_limit" label="仓库上限" width="100"/>
             <el-table-column label="操作" width="220" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" @click="showDetail(row)">
@@ -65,24 +70,24 @@
 
           <div class="pagination">
             <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :total="total"
-              @current-change="loadItems"
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :total="total"
+                @current-change="loadItems"
             />
           </div>
         </el-card>
       </div>
     </el-main>
 
-    <Footer />
+    <Footer/>
 
     <!-- 物品详情弹窗 -->
     <el-dialog
-      v-model="detailVisible"
-      title="物品详情"
-      width="700px"
-      :close-on-click-modal="true"
+        v-model="detailVisible"
+        title="物品详情"
+        width="700px"
+        :close-on-click-modal="true"
     >
       <div v-loading="detailLoading">
         <el-descriptions v-if="currentItem" :column="2" border>
@@ -100,17 +105,24 @@
         <!-- 关联配方：该物品作为产出或材料的配方 -->
         <div v-if="itemRecipes" class="recipes-section">
           <div class="item-tree-section">
-            <h3><el-icon><Tickets /></el-icon> 产出此物品的配方</h3>
+            <h3>
+              <el-icon>
+                <Tickets/>
+              </el-icon>
+              产出此物品的配方
+            </h3>
             <div v-if="itemRecipes.as_result.length > 0" class="recipe-cards">
               <div
-                v-for="recipe in itemRecipes.as_result"
-                :key="recipe.id"
-                class="recipe-card"
-                @click="showItemTree(recipe.result_item_id, recipe.result_item_name || recipe.name)"
+                  v-for="recipe in itemRecipes.as_result"
+                  :key="recipe.id"
+                  class="recipe-card"
+                  @click="showItemTree(recipe.result_item_id, recipe.result_item_name || recipe.name)"
               >
                 <div class="recipe-card-header">
-                  <el-icon><Box /></el-icon>
-                  <span>{{ recipe.name }}</span>
+                  <el-icon>
+                    <Box/>
+                  </el-icon>
+                  <span>{{ recipe.name }}</span>×{{ recipe.material1_quantity }}
                 </div>
                 <div class="recipe-card-info">
                   <el-tag size="small" :type="getProfessionType(recipe.profession_type)">
@@ -121,15 +133,19 @@
                 <div class="recipe-card-materials">
                   <span>材料:</span>
                   <span
-                    v-if="recipe.material1_id"
-                    class="material-link"
-                    @click.stop="showItemTree(recipe.material1_id, recipe.material1_name)"
-                  >{{ recipe.material1_name || '物品' + recipe.material1_id }}×{{ recipe.material1_quantity }}</span>
+                      v-if="recipe.material1_id"
+                      class="material-link"
+                      @click.stop="showItemTree(recipe.material1_id, recipe.material1_name)"
+                  >{{ recipe.material1_name || '物品' + recipe.material1_id }}</span>
                   <span v-if="recipe.material2_id">,
-                    <span class="material-link" @click.stop="showItemTree(recipe.material2_id, recipe.material2_name)">{{ recipe.material2_name || '物品' + recipe.material2_id }}</span>×{{ recipe.material2_quantity }}
+                    <span class="material-link" @click.stop="showItemTree(recipe.material2_id, recipe.material2_name)">{{
+                        recipe.material2_name || '物品' + recipe.material2_id
+                      }}</span>×{{ recipe.material2_quantity }}
                   </span>
                   <span v-if="recipe.material3_id">,
-                    <span class="material-link" @click.stop="showItemTree(recipe.material3_id, recipe.material3_name)">{{ recipe.material3_name || '物品' + recipe.material3_id }}</span>×{{ recipe.material3_quantity }}
+                    <span class="material-link" @click.stop="showItemTree(recipe.material3_id, recipe.material3_name)">{{
+                        recipe.material3_name || '物品' + recipe.material3_id
+                      }}</span>×{{ recipe.material3_quantity }}
                   </span>
                 </div>
               </div>
@@ -138,17 +154,24 @@
           </div>
 
           <div class="item-tree-section">
-            <h3><el-icon><Grid /></el-icon> 用作材料的配方</h3>
+            <h3>
+              <el-icon>
+                <Grid/>
+              </el-icon>
+              用作材料的配方
+            </h3>
             <div v-if="itemRecipes.as_material.length > 0" class="recipe-cards">
               <div
-                v-for="recipe in itemRecipes.as_material"
-                :key="recipe.id"
-                class="recipe-card result-card"
-                @click="showItemTree(recipe.result_item_id, recipe.result_item_name || recipe.name)"
+                  v-for="recipe in itemRecipes.as_material"
+                  :key="recipe.id"
+                  class="recipe-card result-card"
+                  @click="showItemTree(recipe.result_item_id, recipe.result_item_name || recipe.name)"
               >
                 <div class="recipe-card-header">
-                  <el-icon><Box /></el-icon>
-                  <span>{{ recipe.name }}</span>
+                  <el-icon>
+                    <Box/>
+                  </el-icon>
+                  <span>{{ recipe.name }}</span>×{{ recipe.material1_quantity }}
                   <el-tag size="small" type="info">产出</el-tag>
                 </div>
                 <div class="recipe-card-info">
@@ -161,15 +184,19 @@
                 <div class="recipe-card-materials">
                   <span>材料:</span>
                   <span
-                    v-if="recipe.material1_id"
-                    class="material-link"
-                    @click.stop="showItemTree(recipe.material1_id, recipe.material1_name)"
-                  >{{ recipe.material1_name || '物品' + recipe.material1_id }}×{{ recipe.material1_quantity }}</span>
+                      v-if="recipe.material1_id"
+                      class="material-link"
+                      @click.stop="showItemTree(recipe.material1_id, recipe.material1_name)"
+                  >{{ recipe.material1_name || '物品' + recipe.material1_id }}</span>
                   <span v-if="recipe.material2_id">,
-                    <span class="material-link" @click.stop="showItemTree(recipe.material2_id, recipe.material2_name)">{{ recipe.material2_name || '物品' + recipe.material2_id }}</span>×{{ recipe.material2_quantity }}
+                    <span class="material-link" @click.stop="showItemTree(recipe.material2_id, recipe.material2_name)">{{
+                        recipe.material2_name || '物品' + recipe.material2_id
+                      }}</span>×{{ recipe.material2_quantity }}
                   </span>
                   <span v-if="recipe.material3_id">,
-                    <span class="material-link" @click.stop="showItemTree(recipe.material3_id, recipe.material3_name)">{{ recipe.material3_name || '物品' + recipe.material3_id }}</span>×{{ recipe.material3_quantity }}
+                    <span class="material-link" @click.stop="showItemTree(recipe.material3_id, recipe.material3_name)">{{
+                        recipe.material3_name || '物品' + recipe.material3_id
+                      }}</span>×{{ recipe.material3_quantity }}
                   </span>
                 </div>
               </div>
@@ -186,24 +213,31 @@
 
     <!-- 配方树弹窗：从物品点击进入的配方关系 -->
     <el-dialog
-      v-model="itemTreeVisible"
-      :title="itemTreeTitle + ' - 配方关系'"
-      width="700px"
-      :close-on-click-modal="true"
+        v-model="itemTreeVisible"
+        :title="itemTreeTitle + ' - 配方关系'"
+        width="700px"
+        :close-on-click-modal="true"
     >
       <div v-loading="itemTreeLoading">
         <div class="item-tree-section">
-          <h4><el-icon><Tickets /></el-icon> 制作配方</h4>
+          <h4>
+            <el-icon>
+              <Tickets/>
+            </el-icon>
+            制作配方
+          </h4>
           <div v-if="itemTreeData.recipesAsResult.length > 0" class="recipe-cards">
             <div
-              v-for="recipe in itemTreeData.recipesAsResult"
-              :key="recipe.id"
-              class="recipe-card"
-              @click="navigateItemTree(recipe.result_item_id, recipe.result_item_name || recipe.name)"
+                v-for="recipe in itemTreeData.recipesAsResult"
+                :key="recipe.id"
+                class="recipe-card"
+                @click="navigateItemTree(recipe.result_item_id, recipe.result_item_name || recipe.name)"
             >
               <div class="recipe-card-header">
-                <el-icon><Box /></el-icon>
-                <span>{{ recipe.name }}</span>
+                <el-icon>
+                  <Box/>
+                </el-icon>
+                <span>{{ recipe.name }}</span>×{{ recipe.material1_quantity }}
               </div>
               <div class="recipe-card-info">
                 <el-tag size="small" :type="getProfessionType(recipe.profession_type)">
@@ -214,15 +248,21 @@
               <div class="recipe-card-materials">
                 <span>材料:</span>
                 <span
-                  v-if="recipe.material1_id"
-                  class="material-link"
-                  @click.stop="navigateItemTree(recipe.material1_id, recipe.material1_name)"
-                >{{ recipe.material1_name || '物品' + recipe.material1_id }}×{{ recipe.material1_quantity }}</span>
+                    v-if="recipe.material1_id"
+                    class="material-link"
+                    @click.stop="navigateItemTree(recipe.material1_id, recipe.material1_name)"
+                >{{ recipe.material1_name || '物品' + recipe.material1_id }}</span>
                 <span v-if="recipe.material2_id">,
-                  <span class="material-link" @click.stop="navigateItemTree(recipe.material2_id, recipe.material2_name)">{{ recipe.material2_name || '物品' + recipe.material2_id }}</span>×{{ recipe.material2_quantity }}
+                  <span class="material-link"
+                        @click.stop="navigateItemTree(recipe.material2_id, recipe.material2_name)">{{
+                      recipe.material2_name || '物品' + recipe.material2_id
+                    }}</span>×{{ recipe.material2_quantity }}
                 </span>
                 <span v-if="recipe.material3_id">,
-                  <span class="material-link" @click.stop="navigateItemTree(recipe.material3_id, recipe.material3_name)">{{ recipe.material3_name || '物品' + recipe.material3_id }}</span>×{{ recipe.material3_quantity }}
+                  <span class="material-link"
+                        @click.stop="navigateItemTree(recipe.material3_id, recipe.material3_name)">{{
+                      recipe.material3_name || '物品' + recipe.material3_id
+                    }}</span>×{{ recipe.material3_quantity }}
                 </span>
               </div>
             </div>
@@ -231,17 +271,24 @@
         </div>
 
         <div class="item-tree-section">
-          <h4><el-icon><Grid /></el-icon> 可制作配方</h4>
+          <h4>
+            <el-icon>
+              <Grid/>
+            </el-icon>
+            可制作配方
+          </h4>
           <div v-if="itemTreeData.recipesByMaterial.length > 0" class="recipe-cards">
             <div
-              v-for="recipe in itemTreeData.recipesByMaterial"
-              :key="recipe.id"
-              class="recipe-card result-card"
-              @click="navigateItemTree(recipe.result_item_id, recipe.result_item_name || recipe.name)"
+                v-for="recipe in itemTreeData.recipesByMaterial"
+                :key="recipe.id"
+                class="recipe-card result-card"
+                @click="navigateItemTree(recipe.result_item_id, recipe.result_item_name || recipe.name)"
             >
               <div class="recipe-card-header">
-                <el-icon><Box /></el-icon>
-                <span>{{ recipe.name }}</span>
+                <el-icon>
+                  <Box/>
+                </el-icon>
+                <span>{{ recipe.name }}</span>×{{ recipe.result_quantity }}
                 <el-tag size="small" type="info">产出</el-tag>
               </div>
               <div class="recipe-card-info">
@@ -249,20 +296,26 @@
                   {{ recipe.profession_type_label }}
                 </el-tag>
                 <span class="level">Lv.{{ recipe.level_required }}</span>
-                <span v-if="recipe.result_quantity > 1" class="quantity">×{{ recipe.result_quantity }}</span>
+                <span v-if="recipe.result_quantity > 1" class="quantity"></span>
               </div>
               <div class="recipe-card-materials">
                 <span>材料:</span>
                 <span
-                  v-if="recipe.material1_id"
-                  class="material-link"
-                  @click.stop="navigateItemTree(recipe.material1_id, recipe.material1_name)"
-                >{{ recipe.material1_name || '物品' + recipe.material1_id }}×{{ recipe.material1_quantity }}</span>
+                    v-if="recipe.material1_id"
+                    class="material-link"
+                    @click.stop="navigateItemTree(recipe.material1_id, recipe.material1_name)"
+                >{{ recipe.material1_name || '物品' + recipe.material1_id }}</span>×{{ recipe.material1_quantity }}
                 <span v-if="recipe.material2_id">,
-                  <span class="material-link" @click.stop="navigateItemTree(recipe.material2_id, recipe.material2_name)">{{ recipe.material2_name || '物品' + recipe.material2_id }}</span>×{{ recipe.material2_quantity }}
+                  <span class="material-link"
+                        @click.stop="navigateItemTree(recipe.material2_id, recipe.material2_name)">{{
+                      recipe.material2_name || '物品' + recipe.material2_id
+                    }}</span>×{{ recipe.material2_quantity }}
                 </span>
                 <span v-if="recipe.material3_id">,
-                  <span class="material-link" @click.stop="navigateItemTree(recipe.material3_id, recipe.material3_name)">{{ recipe.material3_name || '物品' + recipe.material3_id }}</span>×{{ recipe.material3_quantity }}
+                  <span class="material-link"
+                        @click.stop="navigateItemTree(recipe.material3_id, recipe.material3_name)">{{
+                      recipe.material3_name || '物品' + recipe.material3_id
+                    }}</span>×{{ recipe.material3_quantity }}
                 </span>
               </div>
             </div>
@@ -278,17 +331,17 @@
 
     <!-- 编辑/新增物品弹窗（仅管理员） -->
     <el-dialog
-      v-if="userStore.isAdmin"
-      v-model="editVisible"
-      :title="isCreating ? '新增物品' : '编辑物品'"
-      width="700px"
-      :close-on-click-modal="true"
+        v-if="userStore.isAdmin"
+        v-model="editVisible"
+        :title="isCreating ? '新增物品' : '编辑物品'"
+        width="700px"
+        :close-on-click-modal="true"
     >
       <el-form :model="editForm" :rules="rules" ref="formRef" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="物品名称" prop="name">
-              <el-input v-model="editForm.name" />
+              <el-input v-model="editForm.name"/>
             </el-form-item>
           </el-col>
         </el-row>
@@ -296,12 +349,12 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="背包上限">
-              <el-input-number v-model="editForm.bag_limit" :min="1" class="full-width" />
+              <el-input-number v-model="editForm.bag_limit" :min="1" class="full-width"/>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="仓库上限">
-              <el-input-number v-model="editForm.warehouse_limit" :min="1" class="full-width" />
+              <el-input-number v-model="editForm.warehouse_limit" :min="1" class="full-width"/>
             </el-form-item>
           </el-col>
         </el-row>
@@ -309,7 +362,7 @@
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="物品描述">
-              <el-input v-model="editForm.description" type="textarea" :rows="3" />
+              <el-input v-model="editForm.description" type="textarea" :rows="3"/>
             </el-form-item>
           </el-col>
         </el-row>
@@ -326,13 +379,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import {ref, onMounted} from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
-import { getItems, getItemById, createItem, updateItem, deleteItem } from '@/api/item'
-import { getItemRecipeTree } from '@/api/recipe'
-import { useUserStore } from '@/stores/user'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {getItems, getItemById, createItem, updateItem, deleteItem} from '@/api/item'
+import {getItemRecipeTree} from '@/api/recipe'
+import {useUserStore} from '@/stores/user'
+import {ElMessage, ElMessageBox} from 'element-plus'
 
 const userStore = useUserStore()
 
@@ -347,13 +400,13 @@ const total = ref(0)
 const detailVisible = ref(false)
 const detailLoading = ref(false)
 const currentItem = ref(null)
-const itemRecipes = ref({ as_result: [], as_material: [] })
+const itemRecipes = ref({as_result: [], as_material: []})
 
 // 配方树弹窗相关
 const itemTreeVisible = ref(false)
 const itemTreeLoading = ref(false)
 const itemTreeTitle = ref('')
-const itemTreeData = ref({ recipesByMaterial: [], recipesAsResult: [] })
+const itemTreeData = ref({recipesByMaterial: [], recipesAsResult: []})
 
 // 副职类型对应的tag类型
 const getProfessionType = (type) => {
@@ -381,7 +434,7 @@ const editForm = ref({
 })
 
 const rules = {
-  name: [{ required: true, message: '请输入物品名称', trigger: 'blur' }]
+  name: [{required: true, message: '请输入物品名称', trigger: 'blur'}]
 }
 
 // 搜索防抖
@@ -421,7 +474,7 @@ const showDetail = async (row) => {
   detailVisible.value = true
   detailLoading.value = true
   currentItem.value = null
-  itemRecipes.value = { as_result: [], as_material: [] }
+  itemRecipes.value = {as_result: [], as_material: []}
 
   try {
     const res = await getItemById(row.id)
@@ -449,7 +502,7 @@ const showItemTree = async (itemId, itemName) => {
   itemTreeTitle.value = itemName
   itemTreeVisible.value = true
   itemTreeLoading.value = true
-  itemTreeData.value = { recipesByMaterial: [], recipesAsResult: [] }
+  itemTreeData.value = {recipesByMaterial: [], recipesAsResult: []}
 
   try {
     const res = await getItemRecipeTree(itemId)
@@ -515,7 +568,7 @@ const handleSubmitEdit = async () => {
       try {
         if (isCreating.value) {
           // 创建时不传 id，数据库自增长
-          const { id, ...createData } = editForm.value
+          const {id, ...createData} = editForm.value
           await createItem(createData)
           ElMessage.success('创建成功')
         } else {

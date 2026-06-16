@@ -426,6 +426,7 @@
                   {{ recipe.profession_type_label }}
                 </el-tag>
                 <span class="level">Lv.{{ recipe.level_required }}</span>
+                <span v-if="recipe.result_quantity > 1" class="quantity">×{{ recipe.result_quantity }}</span>
               </div>
               <div class="recipe-card-materials">
                 <span>材料:</span>
