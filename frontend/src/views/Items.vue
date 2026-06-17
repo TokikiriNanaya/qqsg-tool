@@ -51,7 +51,22 @@
             </el-table-column>
             <el-table-column prop="bag_limit" label="背包上限" width="100"/>
             <el-table-column prop="warehouse_limit" label="仓库上限" width="100"/>
-            <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="标签" min-width="200">
+          <template #default="{ row }">
+            <el-tag
+                v-for="tag in (row.tags || []).slice(0, 5)"
+                :key="tag.id"
+                :type="getTagType(tag.category)"
+                size="small"
+            >
+              {{ tag.name }}
+            </el-tag>
+            <span v-if="(row.tags || []).length > 5" class="text-gray">
+              +{{ (row.tags || []).length - 5 }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" @click="showDetail(row)">
                   查看详情
@@ -98,11 +113,48 @@
         </el-descriptions>
 
         <div v-if="currentItem?.description" class="description-section">
-          <h3>物品描述</h3>
-          <p>{{ currentItem.description }}</p>
-        </div>
+      <h3>物品描述</h3>
+      <p>{{ currentItem.description }}</p>
+    </div>
 
-        <!-- 关联配方：该物品作为产出或材料的配方 -->
+    <!-- 标签展示 -->
+    <div v-if="currentItem?.tags && currentItem.tags.length > 0" class="description-section">
+      <h3>标签</h3>
+      <div class="tag-group">
+        <el-tag
+            v-for="tag in currentItem.tags"
+            :key="tag.id"
+            :type="getTagType(tag.category)"
+            size="small"
+        >
+          {{ tag.name }}
+        </el-tag>
+      </div>
+      <div v-if="currentItem.tags.some(t => t.category === '获取来源')" class="tag-category">
+        <span class="category-label">获取来源：</span>
+        <el-tag
+            v-for="tag in currentItem.tags.filter(t => t.category === '获取来源')"
+            :key="tag.id"
+            type="primary"
+            size="small"
+        >
+          {{ tag.name }}
+        </el-tag>
+      </div>
+      <div v-if="currentItem.tags.some(t => t.category === '用途')" class="tag-category">
+        <span class="category-label">用途：</span>
+        <el-tag
+            v-for="tag in currentItem.tags.filter(t => t.category === '用途')"
+            :key="tag.id"
+            type="success"
+            size="small"
+        >
+          {{ tag.name }}
+        </el-tag>
+      </div>
+    </div>
+
+    <!-- 关联配方：该物品作为产出或材料的配方 -->
         <div v-if="itemRecipes" class="recipes-section">
           <div class="item-tree-section">
             <h3>
@@ -366,6 +418,46 @@
             </el-form-item>
           </el-col>
         </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="获取来源">
+              <el-select
+                  v-model="editForm.source_tag_ids"
+                  multiple
+                  placeholder="获取来源"
+                  class="full-width"
+              >
+                <el-option
+                    v-for="tag in sourceTags"
+                    :key="tag.id"
+                    :label="tag.name"
+                    :value="tag.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="用途">
+              <el-select
+                  v-model="editForm.use_tag_ids"
+                  multiple
+                  placeholder="用途"
+                  class="full-width"
+              >
+                <el-option
+                    v-for="tag in useTags"
+                    :key="tag.id"
+                    :label="tag.name"
+                    :value="tag.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <template #footer>
@@ -382,7 +474,7 @@
 import {ref, onMounted} from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
-import {getItems, getItemById, createItem, updateItem, deleteItem} from '@/api/item'
+import {getItems, getItemById, createItem, updateItem, deleteItem, getAllTags} from '@/api/item'
 import {getItemRecipeTree} from '@/api/recipe'
 import {useUserStore} from '@/stores/user'
 import {ElMessage, ElMessageBox} from 'element-plus'
@@ -408,6 +500,10 @@ const itemTreeLoading = ref(false)
 const itemTreeTitle = ref('')
 const itemTreeData = ref({recipesByMaterial: [], recipesAsResult: []})
 
+// 标签数据
+const sourceTags = ref([])
+const useTags = ref([])
+
 // 副职类型对应的tag类型
 const getProfessionType = (type) => {
   const typeMap = {
@@ -420,6 +516,17 @@ const getProfessionType = (type) => {
   return typeMap[type] || 'default'
 }
 
+// 根据标签类别获取tag样式
+const getTagType = (category) => {
+  const typeMap = {
+    '获取来源': 'primary',
+    '用途': 'success',
+    'profession_type': 'warning',
+    '其他': 'info'
+  }
+  return typeMap[category] || 'default'
+}
+
 // 编辑弹窗相关
 const editVisible = ref(false)
 const editLoading = ref(false)
@@ -430,7 +537,9 @@ const editForm = ref({
   name: '',
   description: '',
   bag_limit: 999,
-  warehouse_limit: 9999
+  warehouse_limit: 9999,
+  source_tag_ids: [],
+  use_tag_ids: []
 })
 
 const rules = {
@@ -466,6 +575,18 @@ const loadItems = async () => {
     console.error('加载物品列表失败:', error)
   } finally {
     loading.value = false
+  }
+}
+
+const loadTags = async () => {
+  try {
+    const sourceRes = await getAllTags({category: '获取来源'})
+    sourceTags.value = sourceRes.items || []
+
+    const useRes = await getAllTags({category: '用途'})
+    useTags.value = useRes.items || []
+  } catch (error) {
+    console.error('加载标签失败:', error)
   }
 }
 
@@ -535,7 +656,9 @@ const showCreate = async () => {
     name: '',
     description: '',
     bag_limit: 999,
-    warehouse_limit: 9999
+    warehouse_limit: 9999,
+    source_tag_ids: [],
+    use_tag_ids: []
   }
   editVisible.value = true
 }
@@ -548,12 +671,19 @@ const showEdit = async (row) => {
   }
 
   isCreating.value = false
+
+  const itemRes = await getItemById(row.id)
+  const sourceIds = (itemRes.tags || []).filter(tag => tag.category === '获取来源').map(tag => tag.id)
+  const useIds = (itemRes.tags || []).filter(tag => tag.category === '用途').map(tag => tag.id)
+
   editForm.value = {
     id: row.id,
     name: row.name,
     description: row.description || '',
     bag_limit: row.bag_limit || 99,
-    warehouse_limit: row.warehouse_limit || 999
+    warehouse_limit: row.warehouse_limit || 999,
+    source_tag_ids: sourceIds,
+    use_tag_ids: useIds
   }
   editVisible.value = true
 }
@@ -566,17 +696,15 @@ const handleSubmitEdit = async () => {
     if (valid) {
       editLoading.value = true
       try {
+        const tag_ids = [...editForm.value.source_tag_ids, ...editForm.value.use_tag_ids]
+
         if (isCreating.value) {
-          // 创建时不传 id，数据库自增长
-          const {id, ...createData} = editForm.value
-          await createItem(createData)
+          const {id, source_tag_ids, use_tag_ids, ...createData} = editForm.value
+          await createItem({...createData, tag_ids})
           ElMessage.success('创建成功')
         } else {
-          const submitData = {
-            ...editForm.value,
-            id: Number(editForm.value.id)
-          }
-          await updateItem(submitData.id, submitData)
+          const {id, source_tag_ids, use_tag_ids, ...updateData} = editForm.value
+          await updateItem(Number(id), {...updateData, tag_ids})
           ElMessage.success('更新成功')
         }
         editVisible.value = false
@@ -616,6 +744,7 @@ const handleDelete = async (row) => {
 
 onMounted(() => {
   loadItems()
+  loadTags()
 })
 </script>
 
@@ -790,5 +919,35 @@ h1 {
   background: #f5f7fa;
   border-radius: 4px;
   text-align: center;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.text-gray {
+  color: #909399;
+  font-size: 12px;
+}
+
+.tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tag-category {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.category-label {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
 }
 </style>
