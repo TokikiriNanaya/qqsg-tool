@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.models import Item, Tag, User, UserRole, Recipe
 from app.schemas import ItemCreate, ItemUpdate, ItemResponse
 from app.api.auth import get_current_user
+from app.core.pinyin import match_pinyin
 
 router = APIRouter(prefix="/items", tags=["物品"])
 
@@ -37,13 +38,23 @@ def list_items(
     """获取物品列表（所有用户可访问）"""
     query = db.query(Item)
     
-    # 按名称搜索
-    if name:
-        query = query.filter(Item.name.like(f"%{name}%"))
-    
-    # 按标签筛选
+    # 按标签筛选（先筛选标签，减少后续拼音搜索的数据量）
     if tag_id:
         query = query.join(Item.tags).filter(Tag.id == tag_id)
+    
+    # 按名称搜索（支持拼音首字母、全拼）
+    if name:
+        # 先用 SQL LIKE 粗筛中文名称
+        candidates = query.filter(Item.name.like(f"%{name}%")).all()
+        # 如果粗筛无结果，全量查询后用拼音匹配
+        if not candidates:
+            all_items = query.all()
+            candidates = [item for item in all_items if match_pinyin(item.name, name)]
+        
+        total = len(candidates)
+        # 内存分页
+        paged = candidates[skip: skip + limit]
+        return {"total": total, "items": paged}
     
     total = query.count()
     items = query.offset(skip).limit(limit).all()
@@ -60,12 +71,29 @@ def search_items(
     query = db.query(Item)
     
     if q:
-        query = query.filter(Item.name.like(f"%{q}%"))
+        # 先用 SQL LIKE 粗筛中文名称
+        candidates = query.filter(Item.name.like(f"%{q}%")).all()
+        # 如果粗筛无结果，全量查询后用拼音匹配
+        if not candidates:
+            all_items = query.all()
+            candidates = [item for item in all_items if match_pinyin(item.name, q)]
+        # 同时补上拼音匹配命中的（粗筛可能漏掉拼音命中的）
+        else:
+            like_ids = {item.id for item in candidates}
+            all_items = query.all()
+            for item in all_items:
+                if item.id not in like_ids and match_pinyin(item.name, q):
+                    candidates.append(item)
     
-    if limit is not None:
-        items = query.limit(limit).all()
+        if limit is not None:
+            items = candidates[:limit]
+        else:
+            items = candidates
     else:
-        items = query.all()
+        if limit is not None:
+            items = query.limit(limit).all()
+        else:
+            items = query.all()
     return [{"id": item.id, "name": item.name} for item in items]
 
 

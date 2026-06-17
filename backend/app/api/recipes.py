@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.models import Recipe, User, UserRole, Tag, Item
 from app.schemas import RecipeCreate, RecipeUpdate, RecipeResponse
 from app.api.auth import get_current_user, get_current_user_optional
+from app.core.pinyin import match_pinyin
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/recipes", tags=["配方"])
@@ -92,10 +93,6 @@ def list_recipes(
     if not current_user or current_user.role != UserRole.ADMIN:
         query = query.filter(Recipe.is_ban != 1)
     
-    # 按名称搜索
-    if name:
-        query = query.filter(Recipe.name.like(f"%{name}%"))
-    
     # 按等级筛选
     if level_required is not None:
         query = query.filter(Recipe.level_required == level_required)
@@ -104,17 +101,27 @@ def list_recipes(
     if profession_type is not None:
         query = query.filter(Recipe.profession_type == profession_type)
     
-    # 获取总数
-    total = query.count()
-    
-    # 获取分页数据
-    recipes = query.offset(skip).limit(limit).all()
+    # 按名称搜索（支持拼音首字母、全拼）
+    if name:
+        # 先用 SQL LIKE 粗筛中文名称
+        candidates = query.filter(Recipe.name.like(f"%{name}%")).all()
+        # 如果粗筛无结果，全量查询后用拼音匹配
+        if not candidates:
+            all_recipes = query.all()
+            candidates = [r for r in all_recipes if match_pinyin(r.name, name)]
+        
+        total = len(candidates)
+        # 内存分页
+        paged = candidates[skip: skip + limit]
+    else:
+        total = query.count()
+        paged = query.offset(skip).limit(limit).all()
     
     # 获取副职类型映射
     profession_map = get_profession_type_map(db)
     
     # 添加副职类型标签名称和材料名称
-    recipes_with_label = [add_material_names(add_profession_type_label(r, profession_map), db) for r in recipes]
+    recipes_with_label = [add_material_names(add_profession_type_label(r, profession_map), db) for r in paged]
     
     return {
         "total": total,

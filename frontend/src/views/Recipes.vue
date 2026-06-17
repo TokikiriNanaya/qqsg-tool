@@ -12,7 +12,7 @@
             <el-col :span="8">
               <el-input 
                 v-model="searchQuery" 
-                placeholder="搜索配方名称"
+                placeholder="搜索配方名称（支持拼音首字母）"
                 clearable
                 @input="handleSearchInput"
                 @clear="loadRecipes"
@@ -553,24 +553,14 @@ const doSearchItems = async (query, key) => {
     return
   }
   
-  // 有关键词时：在全量物品中做前端搜索（避免频繁请求后端，响应更快）
+  // 有关键词时：调用后端搜索（支持拼音首字母匹配）
   itemSearchLoading.value[key] = true
   try {
-    const allItems = await loadAllItems()
-    const lowerQuery = query.toLowerCase()
-    const filtered = allItems.filter(item => 
-      item.name.toLowerCase().includes(lowerQuery) || 
-      String(item.id) === query
-    )
-    itemSearchResults.value[key] = filtered
+    const res = await searchItems(query)
+    itemSearchResults.value[key] = res || []
   } catch (error) {
-    // 降级：回退到后端搜索
-    try {
-      const res = await searchItems(query)
-      itemSearchResults.value[key] = res || []
-    } catch (e) {
-      console.error('搜索物品失败:', e)
-    }
+    console.error('搜索物品失败:', error)
+    itemSearchResults.value[key] = []
   } finally {
     itemSearchLoading.value[key] = false
   }

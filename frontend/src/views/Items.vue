@@ -12,7 +12,7 @@
             <el-col :span="12">
               <el-input
                   v-model="searchQuery"
-                  placeholder="搜索物品名称"
+                  placeholder="搜索物品名称（支持拼音首字母，如 gh=钙化大骨）"
                   clearable
                   @input="handleSearchInput"
                   @clear="loadItems"
