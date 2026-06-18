@@ -1,5 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Enum, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Enum
 from datetime import datetime
 import enum
 from app.core.database import Base
@@ -39,17 +38,8 @@ class Tag(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # 关系 - 多对多
-    items = relationship("Item", secondary="item_tags", back_populates="tags")
-
-
-# 物品-标签关联表（多对多）
-item_tags = Table(
-    'item_tags',
-    Base.metadata,
-    Column('item_id', Integer, ForeignKey('items.id'), primary_key=True),
-    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
-)
+    # 关系 - 多对多（已废弃：items不再使用tags）
+    # items = relationship("Item", secondary="item_tags", back_populates="tags")
 
 
 class Item(Base):
@@ -58,15 +48,14 @@ class Item(Base):
 
     id = Column(Integer, primary_key=True, nullable=False, comment="游戏内ID")
     name = Column(String(100), nullable=False, comment="物品名称")
+    category = Column(String(50), default=None, comment="物品分类（如：庖丁、工匠等）")
     description = Column(Text, comment="物品简介")
+    default_price = Column(Integer, default=None, comment="默认价格")
     bag_limit = Column(Integer, default=999, comment="背包携带上限")
     warehouse_limit = Column(Integer, default=9999, comment="仓库存放上限")
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # 关系 - 多对多
-    tags = relationship("Tag", secondary=item_tags, back_populates="items")
 
 
 class Recipe(Base):

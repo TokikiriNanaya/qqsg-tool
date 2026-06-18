@@ -30,27 +30,28 @@ class TagResponse(TagBase):
 class ItemBase(BaseModel):
     id: int = Field(...)
     name: str = Field(..., max_length=100)
+    category: Optional[str] = None
     description: Optional[str] = None
+    default_price: Optional[int] = None
     bag_limit: Optional[int] = Field(99, ge=1)
     warehouse_limit: Optional[int] = Field(999, ge=1)
 
 
 class ItemCreate(ItemBase):
     id: Optional[int] = None  # 创建时可选，数据库自增长
-    tag_ids: Optional[List[int]] = None
 
 
 class ItemUpdate(BaseModel):
     name: Optional[str] = None
+    category: Optional[str] = None
     description: Optional[str] = None
+    default_price: Optional[int] = None
     bag_limit: Optional[int] = None
     warehouse_limit: Optional[int] = None
-    tag_ids: Optional[List[int]] = None
 
 
 class ItemResponse(ItemBase):
     id: int
-    tags: List[TagResponse] = []
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     

@@ -32,15 +32,10 @@ def list_items(
     skip: int = 0,
     limit: int = 100,
     name: Optional[str] = None,
-    tag_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """获取物品列表（所有用户可访问）"""
     query = db.query(Item)
-    
-    # 按标签筛选（先筛选标签，减少后续拼音搜索的数据量）
-    if tag_id:
-        query = query.join(Item.tags).filter(Tag.id == tag_id)
     
     # 按名称搜索（支持拼音首字母、全拼）
     if name:
@@ -122,15 +117,10 @@ def create_item(
             )
     
     # 创建物品（不传id时由数据库自增长）
-    item_data = item.dict(exclude={'tag_ids'})
+    item_data = item.dict()
     if item.id is None:
         item_data.pop('id', None)
     db_item = Item(**item_data)
-    
-    # 添加标签关联
-    if item.tag_ids:
-        tags = db.query(Tag).filter(Tag.id.in_(item.tag_ids)).all()
-        db_item.tags = tags
     
     db.add(db_item)
     db.commit()
@@ -151,14 +141,9 @@ def update_item(
         raise HTTPException(status_code=404, detail="物品不存在")
     
     # 更新基本字段
-    update_data = item.dict(exclude_unset=True, exclude={'tag_ids'})
+    update_data = item.dict(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_item, key, value)
-    
-    # 更新标签关联
-    if item.tag_ids is not None:
-        tags = db.query(Tag).filter(Tag.id.in_(item.tag_ids)).all()
-        db_item.tags = tags
     
     db.commit()
     db.refresh(db_item)

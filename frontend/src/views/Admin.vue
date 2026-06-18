@@ -18,21 +18,23 @@
                 v-model="tagCategoryFilter" 
                 placeholder="按分类筛选" 
                 clearable
+                filterable
+                allow-create
                 class="category-select"
                 @change="loadTags"
               >
-                <el-option label="全部" value="" />
-                <el-option label="副职类型" value="profession_type" />
-                <el-option label="获取来源" value="获取来源" />
-                <el-option label="用途" value="用途" />
-                <el-option label="其他" value="其他" />
+                <el-option 
+                  v-for="cat in tagCategories" 
+                  :key="cat" 
+                  :label="cat" 
+                  :value="cat" 
+                />
               </el-select>
             </div>
             
             <el-table :data="tags" v-loading="tagLoading" stripe>
-              <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="name" label="标签名称" />
-              <el-table-column prop="category" label="分类" width="120">
+              <el-table-column prop="category" label="分类" width="200">
                 <template #default="{ row }">
                   <el-tag :type="getCategoryType(row.category)">
                     {{ getCategoryLabel(row.category) }}
@@ -40,13 +42,9 @@
                 </template>
               </el-table-column>
               <el-table-column prop="value" label="映射值" width="100" />
-              <el-table-column prop="description" label="描述" />
-              <el-table-column prop="created_at" label="创建时间" width="180">
-                <template #default="{ row }">
-                  {{ formatDate(row.created_at) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="180" fixed="right">
+              <el-table-column prop="description" label="描述" width="300"/>
+              <el-table-column prop="sort_order" label="排序号" width="100" />
+              <el-table-column label="操作" width="180" fixed="right" min-width="80">
                 <template #default="{ row }">
                   <el-button size="small" type="primary" @click="showTagForm(row)">
                     编辑
@@ -135,11 +133,13 @@
         </el-form-item>
         
         <el-form-item label="分类" prop="category">
-          <el-select v-model="tagForm.category">
-            <el-option label="副职类型" value="profession_type" />
-            <el-option label="获取来源" value="获取来源" />
-            <el-option label="用途" value="用途" />
-            <el-option label="其他" value="其他" />
+          <el-select v-model="tagForm.category" filterable allow-create>
+            <el-option 
+              v-for="cat in tagCategories" 
+              :key="cat" 
+              :label="cat" 
+              :value="cat" 
+            />
           </el-select>
         </el-form-item>
         
@@ -169,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import { getUsers, updateUserStatus } from '@/api/user'
@@ -215,27 +215,25 @@ const tagRules = {
   value: [{ type: 'number', min: 0, message: '映射值必须大于等于0', trigger: 'change' }]
 }
 
-// 分类映射
-const categoryLabels = {
-  'profession_type': '副职类型',
-  '获取来源': '获取来源',
-  '用途': '用途',
-  '其他': '其他'
-}
-
-const categoryTypes = {
-  'profession_type': 'success',
-  '获取来源': 'primary',
-  '用途': 'warning',
-  '其他': 'info'
-}
+// 从已有标签数据中动态提取分类列表（去重排序）
+const tagCategories = computed(() => {
+  const categories = [...new Set(tags.value.map(t => t.category).filter(Boolean))]
+  return categories.sort()
+})
 
 const getCategoryLabel = (category) => {
-  return categoryLabels[category] || category
+  return category
 }
 
 const getCategoryType = (category) => {
-  return categoryTypes[category] || 'info'
+  // 简单哈希映射颜色
+  const colorMap = ['', 'success', 'primary', 'warning', 'danger']
+  let hash = 0
+  for (let i = 0; i < category.length; i++) {
+    hash = ((hash << 5) - hash) + category.charCodeAt(i)
+    hash |= 0
+  }
+  return colorMap[Math.abs(hash) % colorMap.length] || 'info'
 }
 
 const formatDate = (dateStr) => {
