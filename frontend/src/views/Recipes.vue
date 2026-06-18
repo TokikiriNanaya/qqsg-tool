@@ -65,7 +65,7 @@
             <el-table-column prop="level_required" label="所需等级" width="80" />
             <el-table-column label="幸运概率" width="100">
               <template #default="{ row }">
-                <span v-if="row.lucky_probability > 0">{{ (row.lucky_probability / 10000 * 100).toFixed(1) }}%</span>
+                <span v-if="row.lucky_probability > 0">{{ (row.lucky_probability / 100).toFixed(1) }}%</span>
                 <span v-else>-</span>
               </template>
             </el-table-column>
@@ -114,18 +114,76 @@
       :close-on-click-modal="true"
     >
       <div v-loading="detailLoading">
-        <el-descriptions v-if="currentRecipe" :column="1" border>
-          <el-descriptions-item label="配方名称">{{ currentRecipe.name }}</el-descriptions-item>
-          <el-descriptions-item label="副职类型">{{ currentRecipe.profession_type_label || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="所需等级">{{ currentRecipe.level_required }}</el-descriptions-item>
-        </el-descriptions>
-        
-        <div v-if="currentRecipe?.description" class="description-section">
-          <h3>配方描述</h3>
-          <p>{{ currentRecipe.description }}</p>
+        <div v-if="currentRecipe" class="recipe-detail">
+          <!-- 基本信息卡片 -->
+          <div class="detail-info-grid">
+            <div class="info-item">
+              <span class="info-label">配方名称</span>
+              <span class="info-value">
+                {{ currentRecipe.name }}
+                <el-tag :type="getProfessionType(currentRecipe.profession_type)" size="small" class="inline-tag">
+                  {{ currentRecipe.profession_type_label || '未知' }} Lv{{ currentRecipe.level_required }}
+                </el-tag>
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">配方描述</span>
+              <span class="info-value info-desc">
+                {{ currentRecipe.description || '暂无描述' }}
+                <span class="vitality-badge" v-if="currentRecipe.vitality_cost > 0">
+                  消耗活力 {{ currentRecipe.vitality_cost }}
+                </span>
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">幸运概率</span>
+              <span class="info-value">
+                <template v-if="currentRecipe.lucky_probability > 0">
+                  <span class="formula">
+                    <span class="formula-col">
+                      <span class="formula-note">幸运概率</span>
+                      <span class="formula-val">{{ (currentRecipe.lucky_probability / 100).toFixed(1) }}%</span>
+                    </span>
+                    <template v-if="currentRecipe.profession_level_bonus > 0">
+                      <span class="formula-op">+</span>
+                      <span class="formula-col">
+                        <span class="formula-note">副职增益</span>
+                        <span class="formula-val">{{ (currentRecipe.profession_level_bonus / 100).toFixed(1) }}%</span>
+                      </span>
+                      <span class="formula-op">×</span>
+                      <span class="formula-col">
+                        <span class="formula-note">副职等级</span>
+                        <span class="formula-val">{{ professionLevel }}</span>
+                      </span>
+                    </template>
+                    <span class="formula-op">=</span>
+                    <span class="formula-col">
+                      <span class="formula-note">&nbsp;</span>
+                      <span class="formula-val highlight">{{ calcLuckyRate(currentRecipe).toFixed(1) }}%</span>
+                    </span>
+                  </span>
+                </template>
+                <span v-else>-</span>
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">产出</span>
+              <span class="info-value">
+                {{ currentRecipe.result_item_name || currentRecipe.name }}
+                <span class="quantity-badge">× {{ currentRecipe.result_quantity }}</span>
+              </span>
+            </div>
+            <div class="info-item" v-if="currentRecipe.lucky_result_item_id > 0">
+              <span class="info-label">幸运产出</span>
+              <span class="info-value">
+                {{ currentRecipe.lucky_result_item_name || '未知物品' }}
+                <span class="lucky-quantity">× {{ currentRecipe.lucky_result_quantity || 1 }}</span>
+              </span>
+            </div>
+          </div>
         </div>
         
-<div v-if="currentRecipe" class="materials-section">
+        <div v-if="currentRecipe" class="materials-section">
           <h3>所需材料</h3>
           <div class="recipe-tree">
             <!-- 根节点：产物 -->
@@ -583,6 +641,16 @@ const getProfessionType = (type) => {
   return typeMap[type] || 'default'
 }
 
+// 副职等级（默认21级）
+const professionLevel = 21
+
+// 幸运合成率计算：幸运概率 + (副职增益 × 副职等级)
+const calcLuckyRate = (recipe) => {
+  const base = (recipe.lucky_probability || 0) / 100
+  const bonus = ((recipe.profession_level_bonus || 0) / 100) * professionLevel
+  return base + bonus
+}
+
 const recipes = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
@@ -1024,21 +1092,141 @@ h1 {
   background-color: #fee6e6 !important;
 }
 
-.description-section,
-.materials-section {
-  margin-top: 20px;
+/* 配方详情卡片样式 */
+.recipe-detail {
+  background: #fff;
 }
 
-.description-section h3,
-.materials-section h3 {
-  margin-bottom: 10px;
-  color: #606266;
-  font-size: 16px;
+.detail-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #ebeef5;
 }
 
-.description-section p {
+.info-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 14px 18px;
+  transition: background 0.2s;
+}
+
+.info-item:hover {
+  background: #fafbfc;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #909399;
+  flex-shrink: 0;
+  width: 80px;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #303133;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.info-value.highlight {
+  color: #409eff;
+  font-weight: 600;
+}
+
+.quantity-badge,
+.lucky-quantity {
+  display: inline-block;
+  margin-left: 6px;
+  background: #e6f7ff;
+  color: #409eff;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.inline-tag {
+  margin-left: 10px;
+}
+
+.vitality-badge {
+  display: inline-block;
+  margin-left: 12px;
+  background: #fef0f0;
+  color: #e6a23c;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+
+
+.lucky-quantity {
+  background: #fef0f0;
+  color: #f56c6c;
+}
+
+/* 幸运合成公式样式 */
+.formula {
+  display: inline-flex;
+  align-items: flex-end;
+}
+
+.formula-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.formula-note {
+  font-size: 10px;
+  color: #909399;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.formula-val {
+  font-size: 14px;
+  color: #303133;
+  font-weight: 500;
+}
+
+.formula-val.highlight {
+  color: #409eff;
+  font-weight: 600;
+}
+
+.formula-op {
+  margin: 0 6px 1px;
+  color: #909399;
+  font-size: 14px;
+}
+
+.info-desc {
   line-height: 1.8;
   color: #606266;
+  font-weight: 400;
+}
+
+.materials-section {
+  margin-top: 24px;
+}
+
+.materials-section h3 {
+  margin-bottom: 10px;
+  color: #303133;
+  font-size: 15px;
+  font-weight: 600;
+  padding-left: 8px;
+  border-left: 3px solid #409eff;
 }
 
 .pagination {

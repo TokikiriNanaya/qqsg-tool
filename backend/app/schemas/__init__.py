@@ -170,6 +170,7 @@ class RecipeResponse(RecipeBase):
     material2_name: Optional[str] = None
     material3_name: Optional[str] = None
     result_item_name: Optional[str] = None
+    lucky_result_item_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     

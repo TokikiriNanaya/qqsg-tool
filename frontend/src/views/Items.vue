@@ -97,22 +97,40 @@
         :close-on-click-modal="true"
     >
       <div v-loading="detailLoading">
-        <el-descriptions v-if="currentItem" :column="2" border>
-          <el-descriptions-item label="物品ID">{{ currentItem.id }}</el-descriptions-item>
-          <el-descriptions-item label="物品名称">{{ currentItem.name }}</el-descriptions-item>
-          <el-descriptions-item label="分类">{{ currentItem.category || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="默认价格">{{ currentItem.default_price ?? '-' }}</el-descriptions-item>
-          <el-descriptions-item label="背包上限">{{ currentItem.bag_limit }}</el-descriptions-item>
-          <el-descriptions-item label="仓库上限">{{ currentItem.warehouse_limit }}</el-descriptions-item>
-        </el-descriptions>
+        <div v-if="currentItem" class="item-detail">
+          <!-- 基本信息卡片 -->
+          <div class="detail-info-grid">
+            <div class="info-item">
+              <span class="info-label">物品名称</span>
+              <span class="info-value">
+                {{ currentItem.name }}
+                <span class="item-id-badge">ID: {{ currentItem.id }}</span>
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">物品分类</span>
+              <span class="info-value">{{ currentItem.category || '-' }}</span>
+            </div>
+            <div class="info-item" v-if="currentItem.description">
+              <span class="info-label">物品描述</span>
+              <span class="info-value info-desc">{{ currentItem.description }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">默认价格</span>
+              <span class="info-value">{{ currentItem.default_price ?? '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">背包上限</span>
+              <span class="info-value">{{ currentItem.bag_limit }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">仓库上限</span>
+              <span class="info-value">{{ currentItem.warehouse_limit }}</span>
+            </div>
+          </div>
 
-        <div v-if="currentItem?.description" class="description-section">
-      <h3>物品描述</h3>
-      <p>{{ currentItem.description }}</p>
-    </div>
-
-    <!-- 关联配方：该物品作为产出或材料的配方 -->
-        <div v-if="itemRecipes" class="recipes-section">
+          <!-- 关联配方：该物品作为产出或材料的配方 -->
+          <div v-if="itemRecipes" class="recipes-section">
           <div class="item-tree-section">
             <h3>
               <el-icon>
@@ -212,6 +230,7 @@
             </div>
             <div v-else class="empty-hint">暂无</div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -698,24 +717,79 @@ h1 {
   justify-content: center;
 }
 
-.description-section,
-.recipes-section {
-  margin-top: 20px;
+/* 物品详情卡片样式 */
+.item-detail {
+  background: #fff;
 }
 
-.description-section h3,
-.recipes-section h3 {
-  margin-bottom: 10px;
+.detail-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #ebeef5;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 14px 18px;
+  transition: background 0.2s;
+}
+
+.info-item:hover {
+  background: #fafbfc;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #909399;
+  flex-shrink: 0;
+  width: 80px;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #303133;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.item-id-badge {
+  display: inline-block;
+  margin-left: 10px;
+  background: #f0f2f5;
+  color: #909399;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.info-desc {
+  line-height: 1.8;
   color: #606266;
-  font-size: 16px;
+  font-weight: 400;
+}
+
+.recipes-section {
+  margin-top: 24px;
+}
+
+.recipes-section h3 {
+  margin-bottom: 12px;
+  color: #303133;
+  font-size: 15px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.description-section p {
-  line-height: 1.8;
-  color: #606266;
+  padding-left: 8px;
+  border-left: 3px solid #409eff;
 }
 
 /* 配方树卡片样式 */

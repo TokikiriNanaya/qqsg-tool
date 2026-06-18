@@ -73,6 +73,14 @@ def add_material_names(recipe, db: Session):
     result_item = db.query(Item).filter(Item.id == result_item_id).first()
     recipe_dict['result_item_name'] = result_item.name if result_item else ''
     
+    # 添加幸运合成物品名称
+    lucky_item_id = recipe_dict.get('lucky_result_item_id', 0)
+    if lucky_item_id and lucky_item_id > 0:
+        lucky_item = db.query(Item).filter(Item.id == lucky_item_id).first()
+        recipe_dict['lucky_result_item_name'] = lucky_item.name if lucky_item else ''
+    else:
+        recipe_dict['lucky_result_item_name'] = ''
+    
     return recipe_dict
 
 
