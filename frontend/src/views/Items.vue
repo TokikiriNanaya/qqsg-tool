@@ -159,11 +159,11 @@
                 </div>
                 <div class="recipe-card-materials">
                   <span>材料:</span>
-                  <span
-                      v-if="recipe.material1_id"
-                      class="material-link"
-                      @click.stop="showItemTree(recipe.material1_id, recipe.material1_name)"
-                  >{{ recipe.material1_name || '物品' + recipe.material1_id }}</span>
+                  <span v-if="recipe.material1_id"><span
+                      class="material-link" @click.stop="showItemTree(recipe.material1_id, recipe.material1_name)">{{
+                      recipe.material1_name || '物品' + recipe.material1_id
+                    }}</span>×{{ recipe.material2_quantity }}
+                  </span>
                   <span v-if="recipe.material2_id">,
                     <span class="material-link" @click.stop="showItemTree(recipe.material2_id, recipe.material2_name)">{{
                         recipe.material2_name || '物品' + recipe.material2_id

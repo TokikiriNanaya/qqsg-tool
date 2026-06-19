@@ -122,7 +122,7 @@
               <span class="info-value">
                 {{ currentRecipe.name }}
                 <el-tag :type="getProfessionType(currentRecipe.profession_type)" size="small" class="inline-tag">
-                  {{ currentRecipe.profession_type_label || '未知' }} Lv{{ currentRecipe.level_required }}
+                  {{ currentRecipe.profession_type_label || '未知' }} Lv.{{ currentRecipe.level_required }}
                 </el-tag>
               </span>
             </div>
