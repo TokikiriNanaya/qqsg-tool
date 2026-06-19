@@ -86,16 +86,75 @@
       :loading="detailLoading"
       :item="currentItem"
       :recipes="itemRecipes"
-      @show-tree="(id, name) => showItemTree(id, name)"
+      :flow-data="itemFlowData"
+      @show-item-detail="(id, name) => showItemDetailFromFlow(id, name)"
+      @show-recipe="(id) => showRecipeFromFlow(id)"
     />
 
-    <!-- 配方树弹窗 -->
-    <ItemTreeDialog
-      v-model="itemTreeVisible"
-      :title="itemTreeTitle"
-      :loading="itemTreeLoading"
-      :tree-data="itemTreeData"
-      @navigate="navigateItemTree"
+    <!-- 从配方图点击物品后打开的二级物品详情弹窗 -->
+    <el-dialog
+      v-model="subDetailVisible"
+      :title="'物品详情 - ' + (subDetailItem?.name || '')"
+      width="900px"
+      :close-on-click-modal="true"
+      top="5vh"
+    >
+      <div v-loading="subDetailLoading">
+        <div v-if="subDetailItem" class="sub-item-detail">
+          <div class="detail-info-grid">
+            <div class="info-item">
+              <span class="info-label">物品名称</span>
+              <span class="info-value">
+                {{ subDetailItem.name }}
+                <span class="item-id-badge">ID: {{ subDetailItem.id }}</span>
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">物品分类</span>
+              <span class="info-value">{{ subDetailItem.category || '-' }}</span>
+            </div>
+            <div class="info-item" v-if="subDetailItem.description">
+              <span class="info-label">物品描述</span>
+              <span class="info-value info-desc">{{ subDetailItem.description }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">默认价格</span>
+              <span class="info-value">{{ subDetailItem.default_price ?? '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">背包上限</span>
+              <span class="info-value">{{ subDetailItem.bag_limit }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">仓库上限</span>
+              <span class="info-value">{{ subDetailItem.warehouse_limit }}</span>
+            </div>
+          </div>
+
+          <!-- 配方关系图 -->
+          <div v-if="subItemRecipes && (subItemRecipes.as_result.length > 0 || subItemRecipes.as_material.length > 0)" class="flow-section">
+            <h3><el-icon><Connection /></el-icon> 配方关系图</h3>
+            <RecipeFlow
+              :flow-data="subItemFlowData"
+              :loading="false"
+              :current-item-id="subDetailItem?.id"
+              @click-item="(id, name) => showItemDetailFromFlow(id, name)"
+              @click-recipe="(id) => showRecipeFromFlow(id)"
+            />
+          </div>
+          <div v-else-if="subItemRecipes" class="no-recipes">该物品暂无关联配方</div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="subDetailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 配方详情弹窗（从流程图中点击配方卡片打开） -->
+    <RecipeDetailDialog
+      v-model="recipeDetailVisible"
+      :loading="recipeDetailLoading"
+      :recipe="currentRecipeDetail"
     />
 
     <!-- 编辑/新增弹窗 -->
@@ -109,17 +168,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
-import ItemTreeDialog from '@/components/ItemTreeDialog.vue'
+import RecipeFlow from '@/components/RecipeFlow.vue'
 import ItemDetailDialog from './components/ItemDetailDialog.vue'
 import ItemEditDialog from './components/ItemEditDialog.vue'
+import RecipeDetailDialog from '../recipes/components/RecipeDetailDialog.vue'
 import { getItems, getItemById, deleteItem } from '@/api/item'
-import { getItemRecipeTree } from '@/api/recipe'
+import { getItemRecipeTree, getRecipeById } from '@/api/recipe'
 import { useUserStore } from '@/stores/user'
-import { useRecipeTree } from '@/composables/useRecipeTree'
 import { useSearchDebounce } from '@/composables/useSearchDebounce'
+import { buildItemRecipeFlow } from '@/composables/useFlowTransform'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const userStore = useUserStore()
@@ -136,14 +196,30 @@ const detailVisible = ref(false)
 const detailLoading = ref(false)
 const currentItem = ref(null)
 const itemRecipes = ref({ as_result: [], as_material: [] })
+const itemFlowData = computed(() => {
+  if (!currentItem.value) return { nodes: [], edges: [] }
+  return buildItemRecipeFlow(itemRecipes.value, currentItem.value)
+})
+
+// 二级物品详情弹窗（从配方图中点击物品打开）
+const subDetailVisible = ref(false)
+const subDetailLoading = ref(false)
+const subDetailItem = ref(null)
+const subItemRecipes = ref({ as_result: [], as_material: [] })
+const subItemFlowData = computed(() => {
+  if (!subDetailItem.value) return { nodes: [], edges: [] }
+  return buildItemRecipeFlow(subItemRecipes.value, subDetailItem.value)
+})
+
+// 配方详情弹窗（从配方图中点击配方卡片打开）
+const recipeDetailVisible = ref(false)
+const recipeDetailLoading = ref(false)
+const currentRecipeDetail = ref(null)
 
 // 编辑弹窗
 const editVisible = ref(false)
 const isCreating = ref(false)
 const editForm = ref({})
-
-// 配方树
-const { itemTreeVisible, itemTreeLoading, itemTreeTitle, itemTreeData, showItemTree, navigateItemTree } = useRecipeTree()
 
 // 搜索防抖
 const { currentPage, handleSearchInput } = useSearchDebounce(() => loadItems())
@@ -178,8 +254,8 @@ const showDetail = async (row) => {
     try {
       const recipeRes = await getItemRecipeTree(row.id)
       itemRecipes.value = {
-        as_result: recipeRes.recipes_as_result || [],
-        as_material: recipeRes.recipes_by_material || []
+        as_result: recipeRes.recipes_as_result || recipeRes.recipesAsResult || [],
+        as_material: recipeRes.recipes_by_material || recipeRes.recipesByMaterial || []
       }
     } catch (e) {
       console.error('加载关联配方失败:', e)
@@ -188,6 +264,48 @@ const showDetail = async (row) => {
     console.error('加载物品详情失败:', error)
   } finally {
     detailLoading.value = false
+  }
+}
+
+// 从配方图中点击配方卡片 → 打开配方详情弹窗
+const showRecipeFromFlow = async (recipeId) => {
+  subDetailVisible.value = false
+  recipeDetailVisible.value = true
+  recipeDetailLoading.value = true
+  currentRecipeDetail.value = null
+  try {
+    const res = await getRecipeById(recipeId)
+    currentRecipeDetail.value = res
+  } catch (error) {
+    console.error('加载配方详情失败:', error)
+  } finally {
+    recipeDetailLoading.value = false
+  }
+}
+
+// 从配方图中点击物品 → 打开该物品的详情弹窗
+const showItemDetailFromFlow = async (itemId, itemName) => {
+  subDetailVisible.value = true
+  subDetailLoading.value = true
+  subDetailItem.value = null
+  subItemRecipes.value = { as_result: [], as_material: [] }
+
+  try {
+    const res = await getItemById(itemId)
+    subDetailItem.value = res
+    try {
+      const recipeRes = await getItemRecipeTree(itemId)
+      subItemRecipes.value = {
+        as_result: recipeRes.recipes_as_result || recipeRes.recipesAsResult || [],
+        as_material: recipeRes.recipes_by_material || recipeRes.recipesByMaterial || []
+      }
+    } catch (e) {
+      console.error('加载关联配方失败:', e)
+    }
+  } catch (error) {
+    console.error('加载物品详情失败:', error)
+  } finally {
+    subDetailLoading.value = false
   }
 }
 
@@ -272,5 +390,78 @@ onMounted(() => {
 .item-link:hover {
   color: #66b1ff;
   text-decoration: underline;
+}
+
+/* 二级物品详情弹窗样式 */
+.sub-item-detail { background: #fff; }
+
+.detail-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #ebeef5;
+  margin-bottom: 24px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 14px 18px;
+  transition: background 0.2s;
+}
+
+.info-item:hover { background: #fafbfc; }
+
+.info-label {
+  font-size: 13px;
+  color: #909399;
+  flex-shrink: 0;
+  width: 80px;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #303133;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.item-id-badge {
+  display: inline-block;
+  margin-left: 10px;
+  background: #f0f2f5;
+  color: #909399;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.info-desc { line-height: 1.8; color: #606266; font-weight: 400; }
+
+.flow-section { margin-top: 8px; }
+
+.flow-section h3 {
+  margin-bottom: 12px;
+  color: #303133;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  border-left: 3px solid #409eff;
+}
+
+.no-recipes {
+  text-align: center;
+  padding: 40px 0;
+  color: #909399;
+  font-size: 14px;
 }
 </style>

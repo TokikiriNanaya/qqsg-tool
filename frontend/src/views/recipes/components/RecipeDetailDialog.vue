@@ -2,8 +2,9 @@
   <el-dialog
     v-model="visible"
     title="配方详情"
-    width="800px"
+    width="950px"
     :close-on-click-modal="true"
+    top="3vh"
   >
     <div v-loading="loading">
       <div v-if="recipe" class="recipe-detail">
@@ -15,6 +16,9 @@
               {{ recipe.name }}
               <el-tag :type="getProfessionType(recipe.profession_type)" size="small" class="inline-tag">
                 {{ recipe.profession_type_label || '未知' }} Lv.{{ recipe.level_required }}
+              </el-tag>
+              <el-tag v-if="recipe.is_ban === 1" type="danger" size="small" class="inline-tag" effect="dark">
+                已禁用
               </el-tag>
             </span>
           </div>
@@ -73,14 +77,26 @@
             </span>
           </div>
         </div>
-      </div>
 
-      <!-- 材料树 -->
-      <MaterialTree
-        v-if="recipe"
-        :recipe="recipe"
-        @show-tree="(id, name) => $emit('show-tree', id, name)"
-      />
+        <!-- 配方关系图 -->
+        <div class="flow-section">
+          <h3>
+            <el-icon><Connection /></el-icon>
+            配方关系图
+          </h3>
+          <RecipeFlow
+            :flow-data="flowData"
+            :loading="false"
+            :current-item-id="recipe?.result_item_id"
+            @click-recipe="(id) => $emit('show-recipe', id)"
+            @click-item="(id, name) => $emit('show-item-detail', id, name)"
+          />
+          <div class="flow-legend">
+            <span class="legend-item"><span class="legend-dot upstream"></span> 制作材料（实线）</span>
+            <span class="legend-item"><span class="legend-dot downstream"></span> 可制作物品（虚线）</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <template #footer>
@@ -90,9 +106,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import MaterialTree from './MaterialTree.vue'
+import { ref, computed, watch } from 'vue'
+import RecipeFlow from '@/components/RecipeFlow.vue'
 import { getProfessionType, calcLuckyRate, PROFESSION_LEVEL } from '@/composables/useProfession'
+import { buildSingleRecipeFlow } from '@/composables/useFlowTransform'
+import { getItemRecipeTree } from '@/api/recipe'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -100,11 +118,33 @@ const props = defineProps({
   recipe: { type: Object, default: null }
 })
 
-const emit = defineEmits(['update:modelValue', 'show-tree'])
+const emit = defineEmits(['update:modelValue', 'show-item-detail', 'show-recipe'])
 
 const visible = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val)
+})
+
+// 产物作为材料的配方（可制作物品）
+const asMaterialRecipes = ref([])
+
+// 当配方变化时，获取该产物作为材料的配方
+watch(() => props.recipe, async (newRecipe) => {
+  asMaterialRecipes.value = []
+  if (newRecipe && newRecipe.result_item_id) {
+    try {
+      const treeData = await getItemRecipeTree(newRecipe.result_item_id)
+      asMaterialRecipes.value = treeData.recipes_by_material || treeData.recipesByMaterial || []
+    } catch (e) {
+      console.error('获取可制作配方失败:', e)
+    }
+  }
+}, { immediate: true })
+
+// 实时计算 flowData（当 recipe 或 asMaterialRecipes 变化时自动更新）
+const flowData = computed(() => {
+  if (!props.recipe) return { nodes: [], edges: [] }
+  return buildSingleRecipeFlow(props.recipe, asMaterialRecipes.value)
 })
 </script>
 
@@ -119,6 +159,7 @@ const visible = computed({
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #ebeef5;
+  margin-bottom: 24px;
 }
 
 .info-item {
@@ -175,6 +216,20 @@ const visible = computed({
   white-space: nowrap;
 }
 
+.flow-section { margin-top: 8px; }
+
+.flow-section h3 {
+  margin-bottom: 12px;
+  color: #303133;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  border-left: 3px solid #409eff;
+}
+
 /* 幸运公式 */
 .formula { display: inline-flex; align-items: flex-end; }
 .formula-col { display: flex; flex-direction: column; align-items: center; }
@@ -182,4 +237,34 @@ const visible = computed({
 .formula-val { font-size: 14px; color: #303133; font-weight: 500; }
 .formula-val.highlight { color: #409eff; font-weight: 600; }
 .formula-op { margin: 0 6px 1px; color: #909399; font-size: 14px; }
+
+.flow-legend {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+  padding: 0 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.legend-dot {
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legend-dot.upstream {
+  background: #e6a23c;
+}
+
+.legend-dot.downstream {
+  background: #67c23a;
+  background-image: repeating-linear-gradient(90deg, #67c23a 0, #67c23a 6px, transparent 6px, transparent 9px);
+}
 </style>

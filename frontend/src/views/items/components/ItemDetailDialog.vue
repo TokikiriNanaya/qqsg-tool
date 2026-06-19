@@ -2,8 +2,9 @@
   <el-dialog
     v-model="visible"
     title="物品详情"
-    width="700px"
+    width="900px"
     :close-on-click-modal="true"
+    top="3vh"
   >
     <div v-loading="loading">
       <div v-if="item" class="item-detail">
@@ -38,43 +39,26 @@
           </div>
         </div>
 
-        <!-- 关联配方 -->
-        <div v-if="recipes" class="recipes-section">
-          <div class="item-tree-section">
-            <h3>
-              <el-icon><Tickets /></el-icon>
-              产出此物品的配方
-            </h3>
-            <div v-if="recipes.as_result.length > 0" class="recipe-cards">
-              <RecipeCard
-                v-for="recipe in recipes.as_result"
-                :key="recipe.id"
-                :recipe="recipe"
-                card-type="as-result"
-                @click-card="$emit('show-tree', recipe.result_item_id, recipe.result_item_name || recipe.name)"
-                @click-material="(id, name) => $emit('show-tree', id, name)"
-              />
-            </div>
-            <div v-else class="empty-hint">暂无</div>
+        <!-- 配方关系图 -->
+        <div v-if="recipes && (recipes.as_result.length > 0 || recipes.as_material.length > 0)" class="flow-section">
+          <h3>
+            <el-icon><Connection /></el-icon>
+            配方关系图
+          </h3>
+          <RecipeFlow
+            :flow-data="flowData"
+            :loading="false"
+            :current-item-id="item?.id"
+            @click-recipe="(id) => $emit('show-recipe', id)"
+            @click-item="(id, name) => $emit('show-item-detail', id, name)"
+          />
+          <div class="flow-legend">
+            <span class="legend-item"><span class="legend-dot upstream"></span> 制作材料（实线）</span>
+            <span class="legend-item"><span class="legend-dot downstream"></span> 可制作物品（虚线）</span>
           </div>
-
-          <div class="item-tree-section">
-            <h3>
-              <el-icon><Grid /></el-icon>
-              用作材料的配方
-            </h3>
-            <div v-if="recipes.as_material.length > 0" class="recipe-cards">
-              <RecipeCard
-                v-for="recipe in recipes.as_material"
-                :key="recipe.id"
-                :recipe="recipe"
-                card-type="by-material"
-                @click-card="$emit('show-tree', recipe.result_item_id, recipe.result_item_name || recipe.name)"
-                @click-material="(id, name) => $emit('show-tree', id, name)"
-              />
-            </div>
-            <div v-else class="empty-hint">暂无</div>
-          </div>
+        </div>
+        <div v-else-if="recipes" class="no-recipes">
+          该物品暂无关联配方
         </div>
       </div>
     </div>
@@ -86,8 +70,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import RecipeCard from '@/components/RecipeCard.vue'
+import { computed, watch } from 'vue'
+import RecipeFlow from '@/components/RecipeFlow.vue'
+import { buildItemRecipeFlow } from '@/composables/useFlowTransform'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -96,10 +81,14 @@ const props = defineProps({
   recipes: {
     type: Object,
     default: () => ({ as_result: [], as_material: [] })
+  },
+  flowData: {
+    type: Object,
+    default: () => ({ nodes: [], edges: [] })
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'show-tree'])
+const emit = defineEmits(['update:modelValue', 'show-recipe', 'show-item-detail'])
 
 const visible = computed({
   get: () => props.modelValue,
@@ -120,6 +109,7 @@ const visible = computed({
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #ebeef5;
+  margin-bottom: 24px;
 }
 
 .info-item {
@@ -166,15 +156,11 @@ const visible = computed({
   font-weight: 400;
 }
 
-.recipes-section {
-  margin-top: 24px;
+.flow-section {
+  margin-top: 8px;
 }
 
-.item-tree-section {
-  margin-bottom: 20px;
-}
-
-.item-tree-section h3 {
+.flow-section h3 {
   margin-bottom: 12px;
   color: #303133;
   font-size: 15px;
@@ -186,18 +172,40 @@ const visible = computed({
   border-left: 3px solid #409eff;
 }
 
-.recipe-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.no-recipes {
+  text-align: center;
+  padding: 40px 0;
+  color: #909399;
+  font-size: 14px;
 }
 
-.empty-hint {
-  padding: 6px 12px;
-  color: #909399;
+.flow-legend {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+  padding: 0 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  text-align: center;
+  color: #909399;
+}
+
+.legend-dot {
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legend-dot.upstream {
+  background: #e6a23c;
+}
+
+.legend-dot.downstream {
+  background: #67c23a;
+  background-image: repeating-linear-gradient(90deg, #67c23a 0, #67c23a 6px, transparent 6px, transparent 9px);
 }
 </style>

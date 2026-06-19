@@ -175,9 +175,22 @@ class RecipeResponse(RecipeBase):
     id: int
     profession_type_label: Optional[str] = None
     material1_name: Optional[str] = None
+    material1_category: Optional[str] = None
+    material1_description: Optional[str] = None
+    material1_default_price: Optional[int] = None
     material2_name: Optional[str] = None
+    material2_category: Optional[str] = None
+    material2_description: Optional[str] = None
+    material2_default_price: Optional[int] = None
     material3_name: Optional[str] = None
+    material3_category: Optional[str] = None
+    material3_description: Optional[str] = None
+    material3_default_price: Optional[int] = None
     result_item_name: Optional[str] = None
+    result_item_category: Optional[str] = None
+    result_item_description: Optional[str] = None
+    result_item_price: Optional[int] = None
+    result_item_bag_limit: Optional[int] = None
     lucky_result_item_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

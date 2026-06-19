@@ -49,37 +49,44 @@ def add_profession_type_label(recipe, profession_map):
 
 
 def add_material_names(recipe, db: Session):
-    """为配方添加材料名称"""
+    """为配方添加材料名称及物品详细信息"""
     recipe_dict = recipe.__dict__ if hasattr(recipe, '__dict__') else dict(recipe)
     
-    # 查询所有材料ID对应的物品名称
+    # 收集所有物品ID
     material_ids = [
         recipe_dict.get('material1_id', 0),
         recipe_dict.get('material2_id', 0),
         recipe_dict.get('material3_id', 0)
     ]
-    
-    # 获取物品ID到名称的映射
-    items = db.query(Item).filter(Item.id.in_(material_ids)).all()
-    item_map = {item.id: item.name for item in items}
-    
-    # 添加材料名称
-    recipe_dict['material1_name'] = item_map.get(recipe_dict.get('material1_id', 0), '')
-    recipe_dict['material2_name'] = item_map.get(recipe_dict.get('material2_id', 0), '')
-    recipe_dict['material3_name'] = item_map.get(recipe_dict.get('material3_id', 0), '')
-    
-    # 添加产出物品名称
     result_item_id = recipe_dict.get('result_item_id', 0)
-    result_item = db.query(Item).filter(Item.id == result_item_id).first()
+    lucky_item_id = recipe_dict.get('lucky_result_item_id', 0)
+    
+    all_item_ids = [i for i in material_ids + [result_item_id, lucky_item_id] if i and i > 0]
+    
+    # 获取物品ID到物品对象的映射
+    items = db.query(Item).filter(Item.id.in_(all_item_ids)).all()
+    item_map = {item.id: item for item in items}
+    
+    # 添加材料名称和详细信息
+    for idx in [1, 2, 3]:
+        mid = recipe_dict.get(f'material{idx}_id', 0)
+        mat_item = item_map.get(mid)
+        recipe_dict[f'material{idx}_name'] = mat_item.name if mat_item else ''
+        recipe_dict[f'material{idx}_category'] = mat_item.category if mat_item else ''
+        recipe_dict[f'material{idx}_description'] = mat_item.description if mat_item else ''
+        recipe_dict[f'material{idx}_default_price'] = mat_item.default_price if mat_item else None
+    
+    # 添加产出物品名称和详细信息
+    result_item = item_map.get(result_item_id)
     recipe_dict['result_item_name'] = result_item.name if result_item else ''
+    recipe_dict['result_item_category'] = result_item.category if result_item else ''
+    recipe_dict['result_item_description'] = result_item.description if result_item else ''
+    recipe_dict['result_item_price'] = result_item.default_price if result_item else None
+    recipe_dict['result_item_bag_limit'] = result_item.bag_limit if result_item else 999
     
     # 添加幸运合成物品名称
-    lucky_item_id = recipe_dict.get('lucky_result_item_id', 0)
-    if lucky_item_id and lucky_item_id > 0:
-        lucky_item = db.query(Item).filter(Item.id == lucky_item_id).first()
-        recipe_dict['lucky_result_item_name'] = lucky_item.name if lucky_item else ''
-    else:
-        recipe_dict['lucky_result_item_name'] = ''
+    lucky_item = item_map.get(lucky_item_id)
+    recipe_dict['lucky_result_item_name'] = lucky_item.name if lucky_item else ''
     
     return recipe_dict
 
