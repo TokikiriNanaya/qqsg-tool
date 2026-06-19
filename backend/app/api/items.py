@@ -4,7 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from app.core.database import get_db
 from app.models import Item, Tag, User, UserRole, Recipe
-from app.schemas import ItemCreate, ItemUpdate, ItemResponse
+from app.schemas import ItemCreate, ItemUpdate, ItemResponse, TagCreate, TagUpdate
 from app.api.auth import get_current_user
 from app.core.pinyin import match_pinyin
 
@@ -194,8 +194,8 @@ def get_all_tags(
     if category:
         query = query.filter(Tag.category == category)
     
-    # 按排序号排序
-    query = query.order_by(Tag.sort_order.asc())
+    # 先按分类排序，再按排序号排序
+    query = query.order_by(Tag.category.asc(), Tag.sort_order.asc())
     
     total = query.count()
     tags = query.offset(skip).limit(limit).all()
@@ -217,35 +217,31 @@ def get_tag(tag_id: int, db: Session = Depends(get_db)):
 
 @router.post("/tags/")
 def create_tag(
-    name: str,
-    category: str,
-    value: int = 0,
-    sort_order: int = 0,
-    description: str = None,
+    tag: TagCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
     """创建新标签（仅管理员）"""
-    existing_tag = db.query(Tag).filter(Tag.name == name).first()
+    existing_tag = db.query(Tag).filter(Tag.name == tag.name).first()
     if existing_tag:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="标签已存在"
         )
     
-    existing_value = db.query(Tag).filter(Tag.category == category, Tag.value == value).first()
-    if existing_value and value != 0:
+    existing_value = db.query(Tag).filter(Tag.category == tag.category, Tag.value == tag.value).first()
+    if existing_value and tag.value != 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="该分类下已存在相同的值"
         )
     
     new_tag = Tag(
-        name=name,
-        category=category,
-        value=value,
-        sort_order=sort_order,
-        description=description
+        name=tag.name,
+        category=tag.category,
+        value=tag.value or 0,
+        sort_order=tag.sort_order or 0,
+        description=tag.description
     )
     
     db.add(new_tag)
@@ -257,49 +253,41 @@ def create_tag(
 @router.put("/tags/{tag_id}")
 def update_tag(
     tag_id: int,
-    name: Optional[str] = None,
-    category: Optional[str] = None,
-    value: Optional[int] = None,
-    sort_order: Optional[int] = None,
-    description: Optional[str] = None,
+    tag: TagUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
     """更新标签（仅管理员）"""
-    tag = db.query(Tag).filter(Tag.id == tag_id).first()
-    if not tag:
+    existing = db.query(Tag).filter(Tag.id == tag_id).first()
+    if not existing:
         raise HTTPException(status_code=404, detail="标签不存在")
     
-    if name:
-        existing_tag = db.query(Tag).filter(Tag.name == name, Tag.id != tag_id).first()
-        if existing_tag:
+    update_data = tag.dict(exclude_unset=True)
+    
+    if 'name' in update_data and update_data['name']:
+        dup = db.query(Tag).filter(Tag.name == update_data['name'], Tag.id != tag_id).first()
+        if dup:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="标签名称已存在"
             )
-        tag.name = name
     
-    if category:
-        tag.category = category
-    
-    if value is not None:
-        existing_value = db.query(Tag).filter(Tag.category == tag.category, Tag.value == value, Tag.id != tag_id).first()
-        if existing_value:
+    if 'value' in update_data and update_data['value'] is not None:
+        category = update_data.get('category', existing.category)
+        dup_val = db.query(Tag).filter(Tag.category == category, Tag.value == update_data['value'], Tag.id != tag_id).first()
+        if dup_val:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="该分类下已存在相同的值"
             )
-        tag.value = value
     
-    if sort_order is not None:
-        tag.sort_order = sort_order
-    
-    if description is not None:
-        tag.description = description
+    for key, value in update_data.items():
+        if value is not None:
+            setattr(existing, key, value)
     
     db.commit()
-    db.refresh(tag)
-    return tag
+    db.refresh(existing)
+    return existing
 
 
 @router.delete("/tags/{tag_id}")

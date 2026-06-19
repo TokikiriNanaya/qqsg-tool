@@ -4,17 +4,17 @@
       <el-header>
         <Header />
       </el-header>
-      
+
       <el-main>
         <div class="hero-section">
           <h1>QQ三国工具</h1>
           <p class="subtitle">快速查询游戏内所有可制作物品的配方</p>
-          
+
           <el-button type="primary" size="large" @click="$router.push('/recipes')">
             开始查询
           </el-button>
         </div>
-        
+
         <div class="features">
           <el-row :gutter="20">
             <el-col :span="8">
@@ -41,7 +41,7 @@
           </el-row>
         </div>
       </el-main>
-      
+
       <el-footer>
         <Footer />
       </el-footer>

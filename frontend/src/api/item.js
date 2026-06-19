@@ -65,13 +65,7 @@ export function createTag(data) {
   return request({
     url: '/items/tags/',
     method: 'post',
-    params: {
-      name: data.name,
-      category: data.category,
-      value: data.value || 0,
-      sort_order: data.sort_order || 0,
-      description: data.description
-    }
+    data
   })
 }
 
@@ -80,13 +74,7 @@ export function updateTag(id, data) {
   return request({
     url: `/items/tags/${id}`,
     method: 'put',
-    params: {
-      name: data.name,
-      category: data.category,
-      value: data.value,
-      sort_order: data.sort_order,
-      description: data.description
-    }
+    data
   })
 }
 

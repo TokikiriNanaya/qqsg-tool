@@ -2,45 +2,45 @@
   <div class="register-container">
     <el-card class="register-card">
       <h2>用户注册</h2>
-      
+
       <el-form :model="registerForm" :rules="rules" ref="formRef">
         <el-form-item prop="username">
-          <el-input 
-            v-model="registerForm.username" 
+          <el-input
+            v-model="registerForm.username"
             placeholder="用户名"
             prefix-icon="User"
           />
         </el-form-item>
-        
+
         <el-form-item prop="email">
-          <el-input 
-            v-model="registerForm.email" 
+          <el-input
+            v-model="registerForm.email"
             placeholder="邮箱"
             prefix-icon="Message"
           />
         </el-form-item>
-        
+
         <el-form-item prop="password">
-          <el-input 
-            v-model="registerForm.password" 
+          <el-input
+            v-model="registerForm.password"
             type="password"
             placeholder="密码"
             prefix-icon="Lock"
           />
         </el-form-item>
-        
+
         <el-form-item prop="confirmPassword">
-          <el-input 
-            v-model="registerForm.confirmPassword" 
+          <el-input
+            v-model="registerForm.confirmPassword"
             type="password"
             placeholder="确认密码"
             prefix-icon="Lock"
           />
         </el-form-item>
-        
+
         <el-form-item>
-          <el-button 
-            type="primary" 
+          <el-button
+            type="primary"
             :loading="loading"
             @click="handleRegister"
             style="width: 100%"
@@ -49,7 +49,7 @@
           </el-button>
         </el-form-item>
       </el-form>
-      
+
       <div class="links">
         <router-link to="/login">已有账号？立即登录</router-link>
       </div>
@@ -104,7 +104,7 @@ const rules = {
 
 const handleRegister = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true

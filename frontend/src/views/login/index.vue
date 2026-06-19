@@ -2,29 +2,29 @@
   <div class="login-container">
     <el-card class="login-card">
       <h2>用户登录</h2>
-      
+
       <el-form :model="loginForm" :rules="rules" ref="formRef">
         <el-form-item prop="username">
-          <el-input 
-            v-model="loginForm.username" 
+          <el-input
+            v-model="loginForm.username"
             placeholder="用户名"
             prefix-icon="User"
           />
         </el-form-item>
-        
+
         <el-form-item prop="password">
-          <el-input 
-            v-model="loginForm.password" 
+          <el-input
+            v-model="loginForm.password"
             type="password"
             placeholder="密码"
             prefix-icon="Lock"
             @keyup.enter="handleLogin"
           />
         </el-form-item>
-        
+
         <el-form-item>
-          <el-button 
-            type="primary" 
+          <el-button
+            type="primary"
             :loading="loading"
             @click="handleLogin"
             style="width: 100%"
@@ -33,7 +33,7 @@
           </el-button>
         </el-form-item>
       </el-form>
-      
+
       <div class="links">
         <router-link to="/register">还没有账号？立即注册</router-link>
       </div>
@@ -69,7 +69,7 @@ const rules = {
 
 const handleLogin = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true

@@ -17,6 +17,14 @@ class TagCreate(TagBase):
     pass
 
 
+class TagUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    value: Optional[int] = None
+    sort_order: Optional[int] = None
+    description: Optional[str] = None
+
+
 class TagResponse(TagBase):
     id: int
     created_at: Optional[datetime] = None

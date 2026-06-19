@@ -5,38 +5,37 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('@/views/Home.vue'),
+    component: () => import('@/views/home/index.vue'),
     meta: { title: '首页', requiresAuth: false }
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue'),
+    component: () => import('@/views/login/index.vue'),
     meta: { title: '登录', requiresAuth: false }
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('@/views/Register.vue'),
+    component: () => import('@/views/register/index.vue'),
     meta: { title: '注册', requiresAuth: false }
   },
   {
     path: '/recipes',
     name: 'Recipes',
-    component: () => import('@/views/Recipes.vue'),
+    component: () => import('@/views/recipes/index.vue'),
     meta: { title: '配方列表', requiresAuth: false }
   },
   {
     path: '/items',
     name: 'Items',
-    component: () => import('@/views/Items.vue'),
+    component: () => import('@/views/items/index.vue'),
     meta: { title: '物品列表', requiresAuth: false }
   },
-
   {
     path: '/admin',
     name: 'Admin',
-    component: () => import('@/views/Admin.vue'),
+    component: () => import('@/views/admin/index.vue'),
     meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true }
   }
 ]
