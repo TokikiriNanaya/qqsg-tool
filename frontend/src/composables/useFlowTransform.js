@@ -11,7 +11,7 @@ import { MarkerType } from '@vue-flow/core'
 
 const H_GAP = 220       // 材料节点之间的水平间距
 const COL_WIDTH = 700  // 每个配方列的宽度（容纳最多3个材料）
-const V_GAP = 180      // 垂直间距（每层之间）
+const V_GAP = 180      // 垂直间距（初始布局参考值，实际位置由 equalizeRowHeights 动态计算）
 
 let nodeIdCounter = 0
 
@@ -170,7 +170,15 @@ export function buildSingleRecipeFlow(recipe, asMaterialRecipes = null) {
       const ms = buildRecipeSummary(mr)
       const rid = Number(mr.result_item_id) || 0
       if (rid > 0) {
-        allResults.push({ id: rid, name: mr.result_item_name, qty: mr.result_quantity, recipeSummary: ms })
+        allResults.push({
+          id: rid,
+          name: mr.result_item_name,
+          qty: mr.result_quantity,
+          category: mr.result_item_category || '',
+          description: mr.result_item_description || '',
+          default_price: mr.result_item_price ?? null,
+          recipeSummary: ms
+        })
       }
     })
 
@@ -190,7 +198,9 @@ export function buildSingleRecipeFlow(recipe, asMaterialRecipes = null) {
           label: res.name || `物品${res.id}`,
           item_id: res.id,
           quantity: res.qty,
-          default_price: res.default_price ?? null,
+          category: res.category,
+          description: res.description,
+          default_price: res.default_price,
           asResultRecipes: [res.recipeSummary],
           nodeType: 'product'
         }

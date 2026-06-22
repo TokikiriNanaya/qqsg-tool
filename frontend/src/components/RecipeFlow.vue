@@ -1,5 +1,5 @@
 <template>
-  <div class="recipe-flow-wrapper">
+  <div ref="flowWrapper" class="recipe-flow-wrapper">
     <VueFlow
       :nodes="nodes"
       :edges="edges"
@@ -138,7 +138,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -160,9 +160,117 @@ const props = defineProps({
 
 const emit = defineEmits(['click-recipe', 'click-item'])
 
+// 组件根 DOM ref
+const flowWrapper = ref(null)
+
 // 节点和边
 const nodes = ref([])
 const edges = ref([])
+
+// 节点间固定间距
+const NODE_GAP = 60
+
+// 同一行节点等高，且动态计算 y 坐标保证节点间距固定
+let resizeObserver = null
+let isEqualizing = false // 防止死循环标志
+
+function equalizeRowHeights() {
+  if (isEqualizing) return
+  const wrapper = flowWrapper.value?.querySelector('.recipe-flow-canvas')
+  if (!wrapper) return
+  const nodeEls = wrapper.querySelectorAll('.flow-node')
+  if (nodeEls.length === 0) return
+  const rowMap = new Map() // key: y坐标, value: { y, nodeIds: [], maxHeight: 0 }
+
+  // 先重置所有节点高度为 auto，让浏览器计算自然高度
+  nodeEls.forEach(el => { el.style.height = '' })
+
+  nodeEls.forEach(el => {
+    const nodeContainer = el.closest('.vue-flow__node')
+    if (!nodeContainer) return
+    const nodeId = nodeContainer.getAttribute('data-id')
+    if (!nodeId) return
+    const transform = nodeContainer.style.transform
+    const yMatch = transform.match(/translate\([^,]+,\s*([^)]+)px\)/)
+    if (!yMatch) return
+    const y = Math.round(parseFloat(yMatch[1]))
+    const height = el.offsetHeight
+    if (!rowMap.has(y)) {
+      rowMap.set(y, { y, nodeIds: [], maxHeight: 0 })
+    }
+    const row = rowMap.get(y)
+    row.nodeIds.push(nodeId)
+    if (height > row.maxHeight) {
+      row.maxHeight = height
+    }
+  })
+
+  // 设置同一行所有节点高度为最大值
+  rowMap.forEach(row => {
+    row.nodeIds.forEach(id => {
+      const el = wrapper.querySelector(`[data-id="${id}"] .flow-node`)
+      if (el) el.style.height = row.maxHeight + 'px'
+    })
+  })
+
+  // 按 y 坐标排序行，重新计算每行的 y 位置
+  const sortedRows = [...rowMap.values()].sort((a, b) => a.y - b.y)
+  let currentY = sortedRows.length > 0 ? sortedRows[0].y : 0
+  const newPositions = new Map() // nodeId → newY
+
+  sortedRows.forEach(row => {
+    row.nodeIds.forEach(id => {
+      newPositions.set(id, currentY)
+    })
+    currentY += row.maxHeight + NODE_GAP
+  })
+
+  // 更新 nodes ref，让 Vue Flow 重新渲染边（锚点正确）
+  isEqualizing = true
+  const updated = nodes.value.map(node => {
+    const newY = newPositions.get(node.id)
+    if (newY !== undefined && node.position.y !== newY) {
+      return { ...node, position: { ...node.position, y: newY } }
+    }
+    return node
+  })
+  nodes.value = updated
+  nextTick(() => {
+    isEqualizing = false
+  })
+}
+
+// 使用 ResizeObserver 监听节点内容变化，DOM 稳定后自动触发等高计算
+function setupResizeObserver() {
+  if (resizeObserver) resizeObserver.disconnect()
+  resizeObserver = new ResizeObserver(() => {
+    // 双重 rAF 确保 Vue Flow 完成所有内部布局计算后再执行
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        equalizeRowHeights()
+      })
+    })
+  })
+  const wrapper = flowWrapper.value?.querySelector('.recipe-flow-canvas')
+  if (wrapper) {
+    resizeObserver.observe(wrapper)
+  }
+}
+
+// 监听节点数据变化，在 Vue 渲染完成后通过 ResizeObserver 感知 DOM 变化
+watch(nodes, () => {
+  if (isEqualizing) return
+  nextTick(() => {
+    setupResizeObserver()
+  })
+}, { deep: true })
+
+// 组件挂载时初始化 ResizeObserver
+onMounted(() => {
+  nextTick(() => {
+    setupResizeObserver()
+  })
+})
 
 // 悬浮 tooltip
 const hoveredNode = ref(null)
@@ -191,11 +299,17 @@ const getEdgeStyle = (edgeProps) => {
   return { stroke: '#67c23a', strokeWidth: 2, strokeDasharray: '6 3' }
 }
 
-// 点击节点 → 跳转物品详情（根节点不触发，因为当前页面就是根节点的详情页）
+// 点击节点 → 跳转物品/配方详情
 const onNodeClick = ({ node }) => {
+  // 物品节点：跳转物品详情
   if (node.data && node.data.item_id) {
     if (currentItemId.value != null && node.data.item_id === currentItemId.value) return
     emit('click-item', node.data.item_id, node.data.label)
+    return
+  }
+  // 配方节点：弹出配方详情
+  if (node.type === 'recipe' && node.data?.recipe?.id) {
+    emit('click-recipe', node.data.recipe.id)
   }
 }
 
@@ -261,6 +375,10 @@ onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('mousemove', onMouseMove)
   }
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 </script>
 
@@ -287,9 +405,9 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   padding: 0;
   width: 200px;
-  height: 120px;
+  min-height: 100px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: all 0.25s ease;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
   cursor: pointer;
   overflow: hidden;
   display: flex;

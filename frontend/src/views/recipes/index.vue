@@ -104,7 +104,7 @@
 
     <Footer />
 
-    <!-- 配方详情弹窗 -->
+    <!-- 配方详情弹窗（一级弹窗） -->
     <RecipeDetailDialog
       v-model="detailVisible"
       :loading="detailLoading"
@@ -172,6 +172,15 @@
       </template>
     </el-dialog>
 
+    <!-- 二级配方详情弹窗（从二级物品弹窗的配方图中点击配方打开） -->
+    <RecipeDetailDialog
+      v-model="subRecipeDetailVisible"
+      :loading="subRecipeDetailLoading"
+      :recipe="subCurrentRecipeDetail"
+      @show-item-detail="(id, name) => showItemDetailFromFlow(id, name)"
+      @show-recipe="(id) => showRecipeFromFlow(id)"
+    />
+
     <!-- 编辑弹窗 -->
     <RecipeEditDialog
       v-model="editVisible"
@@ -184,7 +193,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import RecipeFlow from '@/components/RecipeFlow.vue'
@@ -225,6 +234,11 @@ const subItemFlowData = computed(() => {
   if (!subDetailItem.value) return { nodes: [], edges: [] }
   return buildItemRecipeFlow(subItemRecipes.value, subDetailItem.value)
 })
+
+// 二级配方详情弹窗（从二级物品弹窗的配方图中点击配方打开）
+const subRecipeDetailVisible = ref(false)
+const subRecipeDetailLoading = ref(false)
+const subCurrentRecipeDetail = ref(null)
 
 // 编辑弹窗
 const editVisible = ref(false)
@@ -269,15 +283,30 @@ const showDetail = async (row) => {
   }
 }
 
-// 从配方图中点击配方卡片 → 打开该配方的详情弹窗
+// 从配方图中点击配方卡片 → 打开二级配方详情弹窗（不更新一级弹窗）
 const showRecipeFromFlow = async (recipeId) => {
-  // 关闭二级弹窗（如果有的话）
   subDetailVisible.value = false
-  showDetail({ id: recipeId })
+  // 如果二级配方弹窗已打开，先关闭再重新打开（确保是"新的二级弹窗"而非原地更新）
+  if (subRecipeDetailVisible.value) {
+    subRecipeDetailVisible.value = false
+    await nextTick()
+  }
+  subRecipeDetailVisible.value = true
+  subRecipeDetailLoading.value = true
+  subCurrentRecipeDetail.value = null
+  try {
+    const res = await getRecipeById(recipeId)
+    subCurrentRecipeDetail.value = res
+  } catch (error) {
+    console.error('加载配方详情失败:', error)
+  } finally {
+    subRecipeDetailLoading.value = false
+  }
 }
 
-// 从配方图中点击物品 → 打开该物品的详情弹窗
+// 从配方图中点击物品 → 打开该物品的详情弹窗（关闭二级配方弹窗，弹出新的二级物品弹窗）
 const showItemDetailFromFlow = async (itemId, itemName) => {
+  subRecipeDetailVisible.value = false
   subDetailVisible.value = true
   subDetailLoading.value = true
   subDetailItem.value = null

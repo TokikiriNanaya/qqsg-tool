@@ -155,6 +155,8 @@
       v-model="recipeDetailVisible"
       :loading="recipeDetailLoading"
       :recipe="currentRecipeDetail"
+      @show-item-detail="(id, name) => showItemDetailFromFlow(id, name)"
+      @show-recipe="(id) => showRecipeFromFlow(id)"
     />
 
     <!-- 编辑/新增弹窗 -->
@@ -168,7 +170,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import RecipeFlow from '@/components/RecipeFlow.vue'
@@ -268,8 +270,14 @@ const showDetail = async (row) => {
 }
 
 // 从配方图中点击配方卡片 → 打开配方详情弹窗
+// 先关闭已有的二级弹窗和配方弹窗，再弹出新的配方弹窗（保持与物品节点一致的关闭→重新弹出逻辑）
 const showRecipeFromFlow = async (recipeId) => {
   subDetailVisible.value = false
+  // 如果配方弹窗已打开，先关闭再重新打开（确保是"新的二级弹窗"而非原地更新）
+  if (recipeDetailVisible.value) {
+    recipeDetailVisible.value = false
+    await nextTick()
+  }
   recipeDetailVisible.value = true
   recipeDetailLoading.value = true
   currentRecipeDetail.value = null
