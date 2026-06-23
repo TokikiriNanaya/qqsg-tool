@@ -80,9 +80,6 @@
             <div class="node-row recipe-result" v-if="recipeProps.data.recipe?.result">
               → {{ recipeProps.data.recipe.result.name }}×{{ recipeProps.data.recipe.result.quantity }}
             </div>
-            <div class="node-row" v-if="recipeProps.data.recipe?.vitality_cost > 0">
-              <span class="node-value vitality-text">活力 {{ recipeProps.data.recipe.vitality_cost }}</span>
-            </div>
           </div>
         </div>
       </template>
@@ -566,6 +563,7 @@ onBeforeUnmount(() => {
 /* ===== 配方节点 ===== */
 .recipe-node {
   border-color: #e6a23c;
+  background: #fef9e7;
 }
 
 .recipe-node .node-header {

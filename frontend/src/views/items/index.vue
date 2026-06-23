@@ -92,63 +92,15 @@
     />
 
     <!-- 从配方图点击物品后打开的二级物品详情弹窗 -->
-    <el-dialog
+    <ItemDetailDialog
       v-model="subDetailVisible"
-      :title="'物品详情 - ' + (subDetailItem?.name || '')"
-      width="900px"
-      :close-on-click-modal="true"
-      top="5vh"
-    >
-      <div v-loading="subDetailLoading">
-        <div v-if="subDetailItem" class="sub-item-detail">
-          <div class="detail-info-grid">
-            <div class="info-item">
-              <span class="info-label">物品名称</span>
-              <span class="info-value">
-                {{ subDetailItem.name }}
-                <span class="item-id-badge">ID: {{ subDetailItem.id }}</span>
-              </span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">物品分类</span>
-              <span class="info-value">{{ subDetailItem.category || '-' }}</span>
-            </div>
-            <div class="info-item" v-if="subDetailItem.description">
-              <span class="info-label">物品描述</span>
-              <span class="info-value info-desc">{{ subDetailItem.description }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">默认价格</span>
-              <span class="info-value">{{ subDetailItem.default_price ?? '-' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">背包上限</span>
-              <span class="info-value">{{ subDetailItem.bag_limit }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">仓库上限</span>
-              <span class="info-value">{{ subDetailItem.warehouse_limit }}</span>
-            </div>
-          </div>
-
-          <!-- 配方关系图 -->
-          <div v-if="subItemRecipes && (subItemRecipes.as_result.length > 0 || subItemRecipes.as_material.length > 0)" class="flow-section">
-            <h3><el-icon><Connection /></el-icon> 配方关系图</h3>
-            <RecipeFlow
-              :flow-data="subItemFlowData"
-              :loading="false"
-              :current-item-id="subDetailItem?.id"
-              @click-item="(id, name) => showItemDetailFromFlow(id, name)"
-              @click-recipe="(id) => showRecipeFromFlow(id)"
-            />
-          </div>
-          <div v-else-if="subItemRecipes" class="no-recipes">该物品暂无关联配方</div>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="subDetailVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+      :loading="subDetailLoading"
+      :item="subDetailItem"
+      :recipes="subItemRecipes"
+      :flow-data="subItemFlowData"
+      @show-item-detail="(id, name) => showItemDetailFromFlow(id, name)"
+      @show-recipe="(id) => showRecipeFromFlow(id)"
+    />
 
     <!-- 配方详情弹窗（从流程图中点击配方卡片打开） -->
     <RecipeDetailDialog
@@ -173,7 +125,6 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
-import RecipeFlow from '@/components/RecipeFlow.vue'
 import ItemDetailDialog from './components/ItemDetailDialog.vue'
 import ItemEditDialog from './components/ItemEditDialog.vue'
 import RecipeDetailDialog from '../recipes/components/RecipeDetailDialog.vue'
@@ -398,78 +349,5 @@ onMounted(() => {
 .item-link:hover {
   color: #66b1ff;
   text-decoration: underline;
-}
-
-/* 二级物品详情弹窗样式 */
-.sub-item-detail { background: #fff; }
-
-.detail-info-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1px;
-  background: #ebeef5;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #ebeef5;
-  margin-bottom: 24px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  background: #fff;
-  padding: 14px 18px;
-  transition: background 0.2s;
-}
-
-.info-item:hover { background: #fafbfc; }
-
-.info-label {
-  font-size: 13px;
-  color: #909399;
-  flex-shrink: 0;
-  width: 80px;
-}
-
-.info-value {
-  font-size: 14px;
-  color: #303133;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-}
-
-.item-id-badge {
-  display: inline-block;
-  margin-left: 10px;
-  background: #f0f2f5;
-  color: #909399;
-  padding: 1px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 400;
-}
-
-.info-desc { line-height: 1.8; color: #606266; font-weight: 400; }
-
-.flow-section { margin-top: 8px; }
-
-.flow-section h3 {
-  margin-bottom: 12px;
-  color: #303133;
-  font-size: 15px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-left: 8px;
-  border-left: 3px solid #409eff;
-}
-
-.no-recipes {
-  text-align: center;
-  padding: 40px 0;
-  color: #909399;
-  font-size: 14px;
 }
 </style>

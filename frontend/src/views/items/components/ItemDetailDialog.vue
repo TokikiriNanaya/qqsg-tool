@@ -15,27 +15,13 @@
             <span class="info-value">
               {{ item.name }}
               <span class="item-id-badge">ID: {{ item.id }}</span>
+              <el-tag v-if="item.category" size="small" class="info-tag">{{ item.category }}</el-tag>
+              <el-tag v-if="item.default_price != null" size="small" type="warning" class="info-tag">{{ item.default_price }}三国币</el-tag>
             </span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">物品分类</span>
-            <span class="info-value">{{ item.category || '-' }}</span>
           </div>
           <div class="info-item" v-if="item.description">
             <span class="info-label">物品描述</span>
             <span class="info-value info-desc">{{ item.description }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">默认价格</span>
-            <span class="info-value">{{ item.default_price ?? '-' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">背包上限</span>
-            <span class="info-value">{{ item.bag_limit }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">仓库上限</span>
-            <span class="info-value">{{ item.warehouse_limit }}</span>
           </div>
         </div>
 
@@ -148,6 +134,10 @@ const visible = computed({
   border-radius: 4px;
   font-size: 12px;
   font-weight: 400;
+}
+
+.info-tag {
+  margin-left: 8px;
 }
 
 .info-desc {
