@@ -1,6 +1,24 @@
 <template>
-  <div ref="flowWrapper" class="recipe-flow-wrapper">
+  <div ref="flowWrapper" class="recipe-flow-wrapper" :class="{ 'is-fullscreen': isFullscreen }">
+    <!-- 全屏按钮 -->
+    <el-button
+      v-if="!isFullscreen"
+      class="fullscreen-btn"
+      :icon="FullScreen"
+      circle
+      @click="enterFullscreen"
+    />
+    <!-- 退出全屏按钮 -->
+    <el-button
+      v-else
+      class="fullscreen-exit-btn"
+      :icon="Close"
+      circle
+      type="danger"
+      @click="exitFullscreen"
+    />
     <VueFlow
+      ref="vueFlowRef"
       :nodes="nodes"
       :edges="edges"
       :default-viewport="{ zoom: 1, x: 0, y: 0 }"
@@ -16,7 +34,6 @@
     >
       <Background :gap="20" :size="1" />
       <Controls position="bottom-right" />
-      <MiniMap position="bottom-left" />
 
       <!-- 物品节点 -->
       <template #node-item="itemProps">
@@ -24,7 +41,7 @@
           class="flow-node item-node"
           :class="{
             'item-highlight': hoveredNode === itemProps.id,
-            'item-current': currentItemId != null && itemProps.data.item_id === currentItemId,
+            'item-current': props.currentItemId != null && itemProps.data.item_id === props.currentItemId,
             'node-root': itemProps.data.nodeType === 'root'
           }"
         >
@@ -134,8 +151,6 @@
               </div>
             </div>
           </template>
-
-
         </div>
         <div class="tooltip-footer">点击查看详情</div>
       </div>
@@ -144,28 +159,51 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { FullScreen, Close } from '@element-plus/icons-vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
-import { MiniMap } from '@vue-flow/minimap'
 import { SmoothStepEdge } from '@vue-flow/core'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
-import '@vue-flow/minimap/dist/style.css'
 
 const props = defineProps({
   flowData: {
     type: Object,
     default: () => ({ nodes: [], edges: [] })
   },
-  loading: { type: Boolean, default: false },
   currentItemId: { type: Number, default: null },
   currentRecipeId: { type: Number, default: null }
 })
 
 const emit = defineEmits(['click-recipe', 'click-item'])
+
+// 全屏状态
+const isFullscreen = ref(false)
+// VueFlow 实例 ref
+const vueFlowRef = ref(null)
+
+const enterFullscreen = () => {
+  isFullscreen.value = true
+  // 全屏后自动居中树状图
+  nextTick(() => {
+    setTimeout(() => {
+      vueFlowRef.value?.fitView({ padding: 0.15, duration: 300 })
+    }, 100)
+  })
+}
+
+const exitFullscreen = () => {
+  isFullscreen.value = false
+  // 退出全屏后也居中
+  nextTick(() => {
+    setTimeout(() => {
+      vueFlowRef.value?.fitView({ padding: 0.1, duration: 300 })
+    }, 100)
+  })
+}
 
 // 组件根 DOM ref
 const flowWrapper = ref(null)
@@ -287,11 +325,6 @@ const tooltipX = ref(0)
 const tooltipY = ref(0)
 const tooltipTimer = ref(null)
 
-// 当前物品 ID
-const currentItemId = computed(() => props.currentItemId)
-// 当前配方 ID（配方详情页的根节点）
-const currentRecipeId = computed(() => props.currentRecipeId)
-
 // 节点类型标签（root 标签根据节点类型动态显示）
 const nodeTypeLabel = (type, nodeType) => {
   if (type === 'root' && nodeType === 'recipe') return '当前配方'
@@ -314,13 +347,13 @@ const getEdgeStyle = (edgeProps) => {
 const onNodeClick = ({ node }) => {
   // 物品节点：跳转物品详情
   if (node.data && node.data.item_id) {
-    if (currentItemId.value != null && node.data.item_id === currentItemId.value) return
+    if (props.currentItemId != null && node.data.item_id === props.currentItemId) return
     emit('click-item', node.data.item_id, node.data.label)
     return
   }
   // 配方节点：弹出配方详情（根节点配方不可点击）
   if (node.type === 'recipe' && node.data?.recipe?.id) {
-    if (currentRecipeId.value != null && node.data.recipe.id === currentRecipeId.value) return
+    if (props.currentRecipeId != null && node.data.recipe.id === props.currentRecipeId) return
     emit('click-recipe', node.data.recipe.id)
   }
 }
@@ -403,6 +436,16 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: #fafbfc;
   position: relative;
+}
+
+.recipe-flow-wrapper.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
 }
 
 .recipe-flow-canvas {
@@ -542,9 +585,6 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.node-value.lucky { color: #e6a23c; }
-.node-value.vitality { color: #f56c6c; }
-
 /* ===== 物品节点 ===== */
 .item-node .node-header {
   background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
@@ -655,10 +695,6 @@ onBeforeUnmount(() => {
   font-weight: 600;
   font-size: 12px;
   margin-top: 2px;
-}
-
-.recipe-node .vitality-text {
-  color: #f56c6c;
 }
 
 .recipe-node.item-highlight {
@@ -774,5 +810,22 @@ onBeforeUnmount(() => {
   font-size: 11px;
   color: #909399;
   text-align: center;
+}
+
+/* ===== 全屏按钮 ===== */
+.fullscreen-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fullscreen-exit-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10001;
+  box-shadow: 0 2px 12px rgba(245, 108, 108, 0.4);
 }
 </style>
