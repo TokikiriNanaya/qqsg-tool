@@ -14,7 +14,6 @@
             <span class="info-label">物品名称</span>
             <span class="info-value">
               {{ item.name }}
-              <span class="item-id-badge">ID: {{ item.id }}</span>
               <el-tag v-if="item.category" size="small" class="info-tag">{{ item.category }}</el-tag>
               <el-tag v-if="item.default_price != null" size="small" type="warning" class="info-tag">{{ item.default_price }}三国币</el-tag>
             </span>

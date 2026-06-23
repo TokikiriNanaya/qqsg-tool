@@ -106,13 +106,13 @@ export function buildSingleRecipeFlow(recipe, asMaterialRecipes = null) {
     })
   })
 
-  // ===== 第2层：配方节点 (y = -V_GAP) =====
+  // ===== 第2层：配方节点 (y = -V_GAP) — 根节点 =====
   const recipeNodeId = recipeNodeKey(recipe.id)
   addNode({
     id: recipeNodeId,
     type: 'recipe',
     position: { x: 0, y: -V_GAP },
-    data: { recipe: recipeSummary }
+    data: { recipe: { ...recipeSummary, nodeType: 'root' } }
   })
 
   // ===== 第3层：产物物品节点 (y = 0) =====
@@ -131,7 +131,7 @@ export function buildSingleRecipeFlow(recipe, asMaterialRecipes = null) {
         description: recipe.result_item_description || '',
         default_price: recipe.result_item_price ?? null,
         asResultRecipes: [recipeSummary],
-        nodeType: 'root'
+        nodeType: 'product'
       }
     })
   }

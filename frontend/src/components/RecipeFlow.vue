@@ -24,7 +24,8 @@
           class="flow-node item-node"
           :class="{
             'item-highlight': hoveredNode === itemProps.id,
-            'item-current': currentItemId != null && itemProps.data.item_id === currentItemId
+            'item-current': currentItemId != null && itemProps.data.item_id === currentItemId,
+            'node-root': itemProps.data.nodeType === 'root'
           }"
         >
           <div class="node-header">
@@ -57,14 +58,22 @@
       <template #node-recipe="recipeProps">
         <div
           class="flow-node recipe-node"
-          :class="{ 'item-highlight': hoveredNode === recipeProps.id }"
+          :class="{
+            'item-highlight': hoveredNode === recipeProps.id,
+            'node-root': recipeProps.data.recipe?.nodeType === 'root'
+          }"
           @mouseenter="onRecipeMouseEnter(recipeProps.data.recipe, $event)"
           @mouseleave="onRecipeMouseLeave"
         >
           <div class="node-header recipe-header">
             <el-icon><Coin /></el-icon>
             <span class="node-name">{{ recipeProps.data.recipe?.name }}</span>
-            <span class="node-badge badge-recipe">配方</span>
+            <span
+              class="node-badge"
+              :class="recipeProps.data.recipe?.nodeType === 'root' ? 'badge-root' : 'badge-recipe'"
+            >
+              {{ recipeProps.data.recipe?.nodeType === 'root' ? nodeTypeLabel('root', 'recipe') : '配方' }}
+            </span>
           </div>
           <div class="node-body">
             <div class="node-row" v-if="recipeProps.data.recipe?.profession_type_label">
@@ -152,7 +161,8 @@ const props = defineProps({
     default: () => ({ nodes: [], edges: [] })
   },
   loading: { type: Boolean, default: false },
-  currentItemId: { type: Number, default: null }
+  currentItemId: { type: Number, default: null },
+  currentRecipeId: { type: Number, default: null }
 })
 
 const emit = defineEmits(['click-recipe', 'click-item'])
@@ -279,10 +289,14 @@ const tooltipTimer = ref(null)
 
 // 当前物品 ID
 const currentItemId = computed(() => props.currentItemId)
+// 当前配方 ID（配方详情页的根节点）
+const currentRecipeId = computed(() => props.currentRecipeId)
 
-// 节点类型标签
-const nodeTypeLabel = (type) => {
-  const map = { root: '根节点', material: '材料', product: '产物' }
+// 节点类型标签（root 标签根据节点类型动态显示）
+const nodeTypeLabel = (type, nodeType) => {
+  if (type === 'root' && nodeType === 'recipe') return '当前配方'
+  if (type === 'root') return '当前物品'
+  const map = { material: '材料', product: '产物' }
   return map[type] || ''
 }
 
@@ -304,8 +318,9 @@ const onNodeClick = ({ node }) => {
     emit('click-item', node.data.item_id, node.data.label)
     return
   }
-  // 配方节点：弹出配方详情
+  // 配方节点：弹出配方详情（根节点配方不可点击）
   if (node.type === 'recipe' && node.data?.recipe?.id) {
+    if (currentRecipeId.value != null && node.data.recipe.id === currentRecipeId.value) return
     emit('click-recipe', node.data.recipe.id)
   }
 }
@@ -444,7 +459,16 @@ onBeforeUnmount(() => {
 }
 
 .badge-root {
-  background: rgba(64, 158, 255, 0.25);
+  color: #fff;
+  font-weight: 600;
+}
+
+.item-node .badge-root {
+  background: #409eff;
+}
+
+.recipe-node .badge-root {
+  background: rgba(255, 255, 255, 0.35);
   color: #fff;
 }
 
@@ -558,6 +582,29 @@ onBeforeUnmount(() => {
 
 .item-node.item-current .node-header .el-icon {
   color: #fff;
+}
+
+/* ===== 根节点（当前物品/当前配方）视觉强化 ===== */
+.item-node.node-root {
+  border-width: 3px;
+  border-color: #409eff;
+  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.3), 0 0 20px 4px rgba(64, 158, 255, 0.5), 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+.item-node.node-root:hover {
+  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.45), 0 0 30px 6px rgba(64, 158, 255, 0.65), 0 6px 24px rgba(0, 0, 0, 0.2);
+}
+
+.recipe-node.node-root {
+  border-width: 3px;
+  border-color: #f0ad4e;
+  box-shadow: 0 0 0 4px rgba(240, 173, 78, 0.3), 0 0 20px 4px rgba(240, 173, 78, 0.5), 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+.recipe-node.node-root:hover {
+  box-shadow: 0 0 0 4px rgba(240, 173, 78, 0.45), 0 0 30px 6px rgba(240, 173, 78, 0.65), 0 6px 24px rgba(0, 0, 0, 0.2);
 }
 
 /* ===== 配方节点 ===== */

@@ -87,7 +87,8 @@
           <RecipeFlow
             :flow-data="flowData"
             :loading="false"
-            :current-item-id="recipe?.result_item_id"
+            :current-item-id="null"
+            :current-recipe-id="recipe?.id ?? null"
             @click-recipe="(id) => $emit('show-recipe', id)"
             @click-item="(id, name) => $emit('show-item-detail', id, name)"
           />
