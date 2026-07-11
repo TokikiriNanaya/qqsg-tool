@@ -160,6 +160,7 @@
 
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { FullScreen, Close } from '@element-plus/icons-vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
@@ -169,6 +170,8 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
 
+const router = useRouter()
+
 const props = defineProps({
   flowData: {
     type: Object,
@@ -177,8 +180,6 @@ const props = defineProps({
   currentItemId: { type: Number, default: null },
   currentRecipeId: { type: Number, default: null }
 })
-
-const emit = defineEmits(['click-recipe', 'click-item'])
 
 // 全屏状态
 const isFullscreen = ref(false)
@@ -343,18 +344,20 @@ const getEdgeStyle = (edgeProps) => {
   return { stroke: '#67c23a', strokeWidth: 2, strokeDasharray: '6 3' }
 }
 
-// 点击节点 → 跳转物品/配方详情
+// 点击节点 → 新窗口打开物品/配方详情页
 const onNodeClick = ({ node }) => {
-  // 物品节点：跳转物品详情
+  // 物品节点：新窗口打开物品详情页
   if (node.data && node.data.item_id) {
     if (props.currentItemId != null && node.data.item_id === props.currentItemId) return
-    emit('click-item', node.data.item_id, node.data.label)
+    const url = router.resolve(`/items/${node.data.item_id}`).href
+    window.open(url, '_blank')
     return
   }
-  // 配方节点：弹出配方详情（根节点配方不可点击）
+  // 配方节点：新窗口打开配方详情页
   if (node.type === 'recipe' && node.data?.recipe?.id) {
     if (props.currentRecipeId != null && node.data.recipe.id === props.currentRecipeId) return
-    emit('click-recipe', node.data.recipe.id)
+    const url = router.resolve(`/recipes/${node.data.recipe.id}`).href
+    window.open(url, '_blank')
   }
 }
 

@@ -104,35 +104,6 @@
 
     <Footer />
 
-    <!-- 配方详情弹窗（一级弹窗） -->
-    <RecipeDetailDialog
-      v-model="detailVisible"
-      :loading="detailLoading"
-      :recipe="currentRecipe"
-      @show-item-detail="(id, name) => showItemDetailFromFlow(id, name)"
-      @show-recipe="(id) => showRecipeFromFlow(id)"
-    />
-
-    <!-- 从配方图点击物品后打开的物品详情弹窗 -->
-    <ItemDetailDialog
-      v-model="subDetailVisible"
-      :loading="subDetailLoading"
-      :item="subDetailItem"
-      :recipes="subItemRecipes"
-      :flow-data="subItemFlowData"
-      @show-item-detail="(id, name) => showItemDetailFromFlow(id, name)"
-      @show-recipe="(id) => showRecipeFromFlow(id)"
-    />
-
-    <!-- 二级配方详情弹窗（从二级物品弹窗的配方图中点击配方打开） -->
-    <RecipeDetailDialog
-      v-model="subRecipeDetailVisible"
-      :loading="subRecipeDetailLoading"
-      :recipe="subCurrentRecipeDetail"
-      @show-item-detail="(id, name) => showItemDetailFromFlow(id, name)"
-      @show-recipe="(id) => showRecipeFromFlow(id)"
-    />
-
     <!-- 编辑弹窗 -->
     <RecipeEditDialog
       v-model="editVisible"
@@ -145,20 +116,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
-import ItemDetailDialog from '../items/components/ItemDetailDialog.vue'
-import RecipeDetailDialog from './components/RecipeDetailDialog.vue'
 import RecipeEditDialog from './components/RecipeEditDialog.vue'
-import { getRecipes, getRecipeById, deleteRecipe, getItemRecipeTree } from '@/api/recipe'
-import { getItemById, getAllTags } from '@/api/item'
+import { getRecipes, deleteRecipe } from '@/api/recipe'
+import { getAllTags } from '@/api/item'
 import { useUserStore } from '@/stores/user'
 import { useSearchDebounce } from '@/composables/useSearchDebounce'
 import { getProfessionType } from '@/composables/useProfession'
-import { buildItemRecipeFlow } from '@/composables/useFlowTransform'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+const router = useRouter()
 const userStore = useUserStore()
 
 // 副职标签
@@ -171,26 +141,6 @@ const searchQuery = ref('')
 const professionType = ref('')
 const pageSize = ref(10)
 const total = ref(0)
-
-// 详情弹窗
-const detailVisible = ref(false)
-const detailLoading = ref(false)
-const currentRecipe = ref(null)
-
-// 二级物品详情弹窗（从配方图中点击物品打开）
-const subDetailVisible = ref(false)
-const subDetailLoading = ref(false)
-const subDetailItem = ref(null)
-const subItemRecipes = ref({ as_result: [], as_material: [] })
-const subItemFlowData = computed(() => {
-  if (!subDetailItem.value) return { nodes: [], edges: [] }
-  return buildItemRecipeFlow(subItemRecipes.value, subDetailItem.value)
-})
-
-// 二级配方详情弹窗（从二级物品弹窗的配方图中点击配方打开）
-const subRecipeDetailVisible = ref(false)
-const subRecipeDetailLoading = ref(false)
-const subCurrentRecipeDetail = ref(null)
 
 // 编辑弹窗
 const editVisible = ref(false)
@@ -221,66 +171,9 @@ async function loadRecipes() {
   }
 }
 
-const showDetail = async (row) => {
-  detailVisible.value = true
-  detailLoading.value = true
-  currentRecipe.value = null
-  try {
-    const res = await getRecipeById(row.id)
-    currentRecipe.value = res
-  } catch (error) {
-    console.error('加载配方详情失败:', error)
-  } finally {
-    detailLoading.value = false
-  }
-}
-
-// 从配方图中点击配方卡片 → 打开二级配方详情弹窗（不更新一级弹窗）
-const showRecipeFromFlow = async (recipeId) => {
-  subDetailVisible.value = false
-  // 如果二级配方弹窗已打开，先关闭再重新打开（确保是"新的二级弹窗"而非原地更新）
-  if (subRecipeDetailVisible.value) {
-    subRecipeDetailVisible.value = false
-    await nextTick()
-  }
-  subRecipeDetailVisible.value = true
-  subRecipeDetailLoading.value = true
-  subCurrentRecipeDetail.value = null
-  try {
-    const res = await getRecipeById(recipeId)
-    subCurrentRecipeDetail.value = res
-  } catch (error) {
-    console.error('加载配方详情失败:', error)
-  } finally {
-    subRecipeDetailLoading.value = false
-  }
-}
-
-// 从配方图中点击物品 → 打开该物品的详情弹窗（关闭二级配方弹窗，弹出新的二级物品弹窗）
-const showItemDetailFromFlow = async (itemId, itemName) => {
-  subRecipeDetailVisible.value = false
-  subDetailVisible.value = true
-  subDetailLoading.value = true
-  subDetailItem.value = null
-  subItemRecipes.value = { as_result: [], as_material: [] }
-
-  try {
-    const res = await getItemById(itemId)
-    subDetailItem.value = res
-    try {
-      const recipeRes = await getItemRecipeTree(itemId)
-      subItemRecipes.value = {
-        as_result: recipeRes.recipes_as_result || recipeRes.recipesAsResult || [],
-        as_material: recipeRes.recipes_by_material || recipeRes.recipesByMaterial || []
-      }
-    } catch (e) {
-      console.error('加载关联配方失败:', e)
-    }
-  } catch (error) {
-    console.error('加载物品详情失败:', error)
-  } finally {
-    subDetailLoading.value = false
-  }
+const showDetail = (row) => {
+  const url = router.resolve(`/recipes/${row.id}`).href
+  window.open(url, '_blank')
 }
 
 const showCreate = () => {

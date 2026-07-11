@@ -27,10 +27,22 @@ const routes = [
     meta: { title: '配方列表', requiresAuth: false }
   },
   {
+    path: '/recipes/:id',
+    name: 'RecipeDetail',
+    component: () => import('@/views/recipes/detail.vue'),
+    meta: { title: '配方详情', requiresAuth: false }
+  },
+  {
     path: '/items',
     name: 'Items',
     component: () => import('@/views/items/index.vue'),
     meta: { title: '物品列表', requiresAuth: false }
+  },
+  {
+    path: '/items/:id',
+    name: 'ItemDetail',
+    component: () => import('@/views/items/detail.vue'),
+    meta: { title: '物品详情', requiresAuth: false }
   },
   {
     path: '/admin',
