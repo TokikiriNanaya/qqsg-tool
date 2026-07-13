@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # CORS配置
-    ALLOWED_ORIGINS: list = ["http://localhost:9939", "http://localhost:3000"]
+    # CORS配置（使用通配符允许所有来源，适合内网/开发环境）
+    ALLOWED_ORIGINS: list = ["*"]
 
     class Config:
         env_file = ".env"
