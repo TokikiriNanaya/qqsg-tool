@@ -75,6 +75,7 @@ def add_material_names(recipe, db: Session):
         recipe_dict[f'material{idx}_category'] = mat_item.category if mat_item else ''
         recipe_dict[f'material{idx}_description'] = mat_item.description if mat_item else ''
         recipe_dict[f'material{idx}_default_price'] = mat_item.default_price if mat_item else None
+        recipe_dict[f'material{idx}_juntuan_point'] = mat_item.juntuan_point if mat_item else None
     
     # 添加产出物品名称和详细信息
     result_item = item_map.get(result_item_id)
@@ -82,6 +83,7 @@ def add_material_names(recipe, db: Session):
     recipe_dict['result_item_category'] = result_item.category if result_item else ''
     recipe_dict['result_item_description'] = result_item.description if result_item else ''
     recipe_dict['result_item_price'] = result_item.default_price if result_item else None
+    recipe_dict['result_item_juntuan_point'] = result_item.juntuan_point if result_item else None
     recipe_dict['result_item_bag_limit'] = result_item.bag_limit if result_item else 999
     
     # 添加幸运合成物品名称

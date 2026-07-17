@@ -15,7 +15,7 @@
                 <span class="info-value">
                   {{ item.name }}
                   <el-tag v-if="item.category" size="small" class="info-tag">{{ item.category }}</el-tag>
-                  <el-tag v-if="item.default_price != null" size="small" type="warning" class="info-tag">{{ item.default_price }}三国币</el-tag>
+                  <el-tag v-if="hasPrice(item.default_price, item.juntuan_point)" size="small" type="warning" class="info-tag">{{ formatPrice(item.default_price, item.juntuan_point) }}</el-tag>
                 </span>
               </div>
               <div class="info-item" v-if="item.description">
@@ -65,6 +65,7 @@ import RecipeFlow from '@/components/RecipeFlow.vue'
 import { getItemById } from '@/api/item'
 import { getItemRecipeTree } from '@/api/recipe'
 import { buildItemRecipeFlow } from '@/composables/useFlowTransform'
+import { formatPrice, hasPrice } from '@/composables/usePriceFormat'
 const route = useRoute()
 
 const loading = ref(false)

@@ -41,6 +41,7 @@ class ItemBase(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     default_price: Optional[int] = None
+    juntuan_point: Optional[int] = None
     bag_limit: Optional[int] = Field(99, ge=1)
     warehouse_limit: Optional[int] = Field(999, ge=1)
 
@@ -54,6 +55,7 @@ class ItemUpdate(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     default_price: Optional[int] = None
+    juntuan_point: Optional[int] = None
     bag_limit: Optional[int] = None
     warehouse_limit: Optional[int] = None
 
@@ -178,18 +180,22 @@ class RecipeResponse(RecipeBase):
     material1_category: Optional[str] = None
     material1_description: Optional[str] = None
     material1_default_price: Optional[int] = None
+    material1_juntuan_point: Optional[int] = None
     material2_name: Optional[str] = None
     material2_category: Optional[str] = None
     material2_description: Optional[str] = None
     material2_default_price: Optional[int] = None
+    material2_juntuan_point: Optional[int] = None
     material3_name: Optional[str] = None
     material3_category: Optional[str] = None
     material3_description: Optional[str] = None
     material3_default_price: Optional[int] = None
+    material3_juntuan_point: Optional[int] = None
     result_item_name: Optional[str] = None
     result_item_category: Optional[str] = None
     result_item_description: Optional[str] = None
     result_item_price: Optional[int] = None
+    result_item_juntuan_point: Optional[int] = None
     result_item_bag_limit: Optional[int] = None
     lucky_result_item_name: Optional[str] = None
     created_at: Optional[datetime] = None

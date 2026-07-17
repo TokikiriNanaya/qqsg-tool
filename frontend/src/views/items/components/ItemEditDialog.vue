@@ -22,21 +22,26 @@
 
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="默认价格">
+          <el-form-item label="默认价格(三国币)">
             <el-input-number v-model="form.default_price" :min="0" class="full-width" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="背包上限">
-            <el-input-number v-model="form.bag_limit" :min="1" class="full-width" />
+          <el-form-item label="军团点">
+            <el-input-number v-model="form.juntuan_point" :min="0" class="full-width" />
           </el-form-item>
         </el-col>
       </el-row>
 
       <el-row :gutter="20">
         <el-col :span="12">
+          <el-form-item label="背包上限">
+            <el-input-number v-model="form.bag_limit" :min="0" class="full-width" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
           <el-form-item label="仓库上限">
-            <el-input-number v-model="form.warehouse_limit" :min="1" class="full-width" />
+            <el-input-number v-model="form.warehouse_limit" :min="0" class="full-width" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -89,8 +94,9 @@ const form = reactive({
   category: '',
   description: '',
   default_price: null,
-  bag_limit: 999,
-  warehouse_limit: 9999
+  juntuan_point: null,
+  bag_limit: null,
+  warehouse_limit: null
 })
 
 // 弹窗打开时同步外部数据到内部 reactive form
@@ -102,8 +108,9 @@ watch(visible, (val) => {
       category: props.initForm.category || '',
       description: props.initForm.description || '',
       default_price: props.initForm.default_price ?? null,
-      bag_limit: props.initForm.bag_limit ?? 999,
-      warehouse_limit: props.initForm.warehouse_limit ?? 9999
+      juntuan_point: props.initForm.juntuan_point ?? null,
+      bag_limit: props.initForm.bag_limit ?? null,
+      warehouse_limit: props.initForm.warehouse_limit ?? null
     })
   }
 })

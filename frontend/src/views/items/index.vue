@@ -44,9 +44,9 @@
               </template>
             </el-table-column>
             <el-table-column prop="category" label="分类" width="100" />
-            <el-table-column prop="default_price" label="默认价格" width="100">
+            <el-table-column prop="default_price" label="默认价格" min-width="200">
               <template #default="{ row }">
-                <span v-if="row.default_price !== null && row.default_price !== undefined">{{ row.default_price }}</span>
+                <span v-if="hasPrice(row.default_price, row.juntuan_point)">{{ formatPrice(row.default_price, row.juntuan_point) }}</span>
                 <span v-else class="text-gray">-</span>
               </template>
             </el-table-column>
@@ -99,6 +99,7 @@ import ItemEditDialog from './components/ItemEditDialog.vue'
 import { getItems, deleteItem } from '@/api/item'
 import { useUserStore } from '@/stores/user'
 import { useSearchDebounce } from '@/composables/useSearchDebounce'
+import { formatPrice, hasPrice } from '@/composables/usePriceFormat'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
@@ -147,7 +148,7 @@ const showCreate = () => {
   isCreating.value = true
   editForm.value = {
     id: null, name: '', category: '', description: '',
-    default_price: null, bag_limit: 999, warehouse_limit: 9999
+    default_price: null, juntuan_point: null, bag_limit: null, warehouse_limit: null
   }
   editVisible.value = true
 }
@@ -158,7 +159,8 @@ const showEdit = (row) => {
   editForm.value = {
     id: row.id, name: row.name, category: row.category || '',
     description: row.description || '', default_price: row.default_price ?? null,
-    bag_limit: row.bag_limit || 99, warehouse_limit: row.warehouse_limit || 999
+    juntuan_point: row.juntuan_point ?? null,
+    bag_limit: row.bag_limit ?? null, warehouse_limit: row.warehouse_limit ?? null
   }
   editVisible.value = true
 }

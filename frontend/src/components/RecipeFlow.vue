@@ -60,9 +60,9 @@
               <span class="node-label">分类</span>
               <span class="node-value">{{ itemProps.data.category }}</span>
             </div>
-            <div class="node-row" v-if="itemProps.data.default_price != null">
+            <div class="node-row" v-if="hasPrice(itemProps.data.default_price, itemProps.data.juntuan_point)">
               <span class="node-label">价格</span>
-              <span class="node-value price">{{ itemProps.data.default_price }}</span>
+              <span class="node-value price">{{ formatPrice(itemProps.data.default_price, itemProps.data.juntuan_point) }}</span>
             </div>
             <div class="node-row node-desc" v-if="itemProps.data.description">
               <span class="node-value-desc">{{ itemProps.data.description }}</span>
@@ -162,6 +162,7 @@
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { FullScreen, Close } from '@element-plus/icons-vue'
+import { formatPrice, hasPrice } from '@/composables/usePriceFormat'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'

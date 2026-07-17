@@ -2,14 +2,13 @@
 对外分享/搜索 API 模块
 供其他项目（如 QQ 机器人）调用，使用 GET 请求，参数固定为 keyword
 """
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.pinyin import match_pinyin
-from app.core.config import settings
 from app.models import Recipe, Item, Tag, User, UserRole
 from app.api.auth import get_current_user_optional
 from app.api.recipes import add_material_names, add_profession_type_label, get_profession_type_map
@@ -46,6 +45,30 @@ class ShareSearchResponse(BaseModel):
 
 
 # ========== 工具函数 ==========
+
+def format_price(default_price, juntuan_point):
+    """格式化价格展示
+    规则：
+    - 都为空或0 → 返回空字符串
+    - 仅有三国币 → "100三国币"
+    - 仅有军团点 → "100军团点*0.2=20三国币"
+    - 两者都有 → "100三国币+100军团点*0.2=120三国币"
+    """
+    dp = default_price or 0
+    jp = juntuan_point or 0
+
+    if dp == 0 and jp == 0:
+        return ""
+
+    jp_value = jp * 0.2
+    total = dp + jp_value
+
+    if dp > 0 and jp > 0:
+        return f"{dp}+{jp}*0.2={total:.0f}"
+    elif dp > 0:
+        return f"{dp}"
+    else:
+        return f"{jp}*0.2={jp_value:.0f}"
 
 def format_recipe_detail(recipe_dict: dict) -> str:
     """将配方详情格式化为文本"""
@@ -105,8 +128,8 @@ def format_item_detail(item) -> str:
     if item.description:
         lines.append(f"描述: {item.description}")
 
-    if item.default_price is not None:
-        lines.append(f"默认价格: {item.default_price} 三国币")
+    if item.default_price or item.juntuan_point:
+        lines.append(f"价格: {format_price(item.default_price, item.juntuan_point)}")
 
     if item.bag_limit:
         lines.append(f"背包上限: {item.bag_limit}")

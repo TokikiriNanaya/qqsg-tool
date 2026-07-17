@@ -100,6 +100,7 @@ export function buildSingleRecipeFlow(recipe, asMaterialRecipes = null) {
         category: mat.category || '',
         description: mat.description || '',
         default_price: mat.default_price ?? null,
+        juntuan_point: mat.juntuan_point ?? null,
         asMaterialRecipes: [recipeSummary],
         nodeType: 'material'
       }
@@ -130,6 +131,7 @@ export function buildSingleRecipeFlow(recipe, asMaterialRecipes = null) {
         category: recipe.result_item_category || '',
         description: recipe.result_item_description || '',
         default_price: recipe.result_item_price ?? null,
+        juntuan_point: recipe.result_item_juntuan_point ?? null,
         asResultRecipes: [recipeSummary],
         nodeType: 'product'
       }
@@ -177,6 +179,7 @@ export function buildSingleRecipeFlow(recipe, asMaterialRecipes = null) {
           category: mr.result_item_category || '',
           description: mr.result_item_description || '',
           default_price: mr.result_item_price ?? null,
+          juntuan_point: mr.result_item_juntuan_point ?? null,
           recipeSummary: ms
         })
       }
@@ -201,6 +204,7 @@ export function buildSingleRecipeFlow(recipe, asMaterialRecipes = null) {
           category: res.category,
           description: res.description,
           default_price: res.default_price,
+          juntuan_point: res.juntuan_point,
           asResultRecipes: [res.recipeSummary],
           nodeType: 'product'
         }
@@ -284,6 +288,7 @@ export function buildItemRecipeFlow(treeData, currentItem) {
       category: currentItem.category || '',
       description: currentItem.description || '',
       default_price: currentItem.default_price ?? null,
+      juntuan_point: currentItem.juntuan_point ?? null,
       nodeType: 'root'
     }
   })
@@ -321,6 +326,7 @@ export function buildItemRecipeFlow(treeData, currentItem) {
           category: mat.category || '',
           description: mat.description || '',
           default_price: mat.default_price ?? null,
+          juntuan_point: mat.juntuan_point ?? null,
           asMaterialRecipes: [rs],
           nodeType: 'material'
         }
@@ -401,6 +407,7 @@ export function buildItemRecipeFlow(treeData, currentItem) {
         category: recipe.result_item_category || '',
         description: recipe.result_item_description || '',
         default_price: recipe.result_item_price ?? null,
+        juntuan_point: recipe.result_item_juntuan_point ?? null,
         asResultRecipes: [rs],
         nodeType: 'product'
       }
@@ -436,7 +443,8 @@ function extractMaterials(recipe) {
         qty,
         category: recipe[`material${i}_category`] || '',
         description: recipe[`material${i}_description`] || '',
-        default_price: recipe[`material${i}_default_price`] ?? null
+        default_price: recipe[`material${i}_default_price`] ?? null,
+        juntuan_point: recipe[`material${i}_juntuan_point`] ?? null
       })
     }
   }

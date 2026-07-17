@@ -50,7 +50,8 @@ class Item(Base):
     name = Column(String(100), nullable=False, comment="物品名称")
     category = Column(String(50), default=None, comment="物品分类（如：庖丁、工匠等）")
     description = Column(Text, comment="物品简介")
-    default_price = Column(Integer, default=None, comment="默认价格")
+    default_price = Column(Integer, default=None, comment="默认价格(三国币)")
+    juntuan_point = Column(Integer, default=None, comment="军团点")
     bag_limit = Column(Integer, default=999, comment="背包携带上限")
     warehouse_limit = Column(Integer, default=9999, comment="仓库存放上限")
     
