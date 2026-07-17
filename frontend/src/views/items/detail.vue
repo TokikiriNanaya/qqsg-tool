@@ -14,7 +14,7 @@
                 <span class="info-label">物品名称</span>
                 <span class="info-value">
                   {{ item.name }}
-                  <el-tag v-if="item.category" size="small" class="info-tag">{{ item.category }}</el-tag>
+                  <el-tag v-if="item.category_label" size="small" class="info-tag">{{ item.category_label }}</el-tag>
                   <el-tag v-if="hasPrice(item.default_price, item.juntuan_point)" size="small" type="warning" class="info-tag">{{ formatPrice(item.default_price, item.juntuan_point) }}</el-tag>
                 </span>
               </div>

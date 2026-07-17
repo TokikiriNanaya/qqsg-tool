@@ -52,6 +52,17 @@ def add_material_names(recipe, db: Session):
     """为配方添加材料名称及物品详细信息"""
     recipe_dict = recipe.__dict__ if hasattr(recipe, '__dict__') else dict(recipe)
     
+    # 获取物品分类标签映射
+    category_map = {}
+    from app.models import Tag
+    tags = db.query(Tag).filter(Tag.category == "物品分类").all()
+    category_map = {tag.value: tag.name for tag in tags}
+    
+    def get_category_label(item):
+        if not item:
+            return ''
+        return category_map.get(item.category, str(item.category) if item.category else '')
+    
     # 收集所有物品ID
     material_ids = [
         recipe_dict.get('material1_id', 0),
@@ -72,7 +83,7 @@ def add_material_names(recipe, db: Session):
         mid = recipe_dict.get(f'material{idx}_id', 0)
         mat_item = item_map.get(mid)
         recipe_dict[f'material{idx}_name'] = mat_item.name if mat_item else ''
-        recipe_dict[f'material{idx}_category'] = mat_item.category if mat_item else ''
+        recipe_dict[f'material{idx}_category'] = get_category_label(mat_item)
         recipe_dict[f'material{idx}_description'] = mat_item.description if mat_item else ''
         recipe_dict[f'material{idx}_default_price'] = mat_item.default_price if mat_item else None
         recipe_dict[f'material{idx}_juntuan_point'] = mat_item.juntuan_point if mat_item else None
@@ -80,7 +91,7 @@ def add_material_names(recipe, db: Session):
     # 添加产出物品名称和详细信息
     result_item = item_map.get(result_item_id)
     recipe_dict['result_item_name'] = result_item.name if result_item else ''
-    recipe_dict['result_item_category'] = result_item.category if result_item else ''
+    recipe_dict['result_item_category'] = get_category_label(result_item)
     recipe_dict['result_item_description'] = result_item.description if result_item else ''
     recipe_dict['result_item_price'] = result_item.default_price if result_item else None
     recipe_dict['result_item_juntuan_point'] = result_item.juntuan_point if result_item else None

@@ -52,7 +52,7 @@ class Item(Base):
 
     id = Column(Integer, primary_key=True, nullable=False, comment="游戏内ID")
     name = Column(String(100), nullable=False, comment="物品名称")
-    category = Column(String(50), default=None, comment="物品分类（如：庖丁、工匠等）")
+    category = Column(Integer, default=None, comment="物品分类（对应tags表中category='物品分类'的标签value值）")
     description = Column(Text, comment="物品简介")
     default_price = Column(Integer, default=None, comment="默认价格(三国币)")
     juntuan_point = Column(Integer, default=None, comment="军团点")

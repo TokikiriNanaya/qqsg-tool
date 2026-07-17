@@ -15,7 +15,14 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="物品分类">
-            <el-input v-model="form.category" placeholder="如：庖丁、工匠" />
+            <el-select v-model="form.category" placeholder="请选择物品分类" clearable class="full-width">
+              <el-option
+                v-for="cat in categoryOptions"
+                :key="cat.value"
+                :label="cat.label"
+                :value="cat.value"
+              />
+            </el-select>
           </el-form-item>
         </el-col>
       </el-row>
@@ -65,9 +72,9 @@
 </template>
 
 <script setup>
-import { computed, ref, reactive, watch } from 'vue'
+import { computed, ref, reactive, watch, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { createItem, updateItem } from '@/api/item'
+import { createItem, updateItem, getAllTags } from '@/api/item'
 import { ElMessage } from 'element-plus'
 
 const userStore = useUserStore()
@@ -91,7 +98,7 @@ const formRef = ref(null)
 const form = reactive({
   id: null,
   name: '',
-  category: '',
+  category: null,
   description: '',
   default_price: null,
   juntuan_point: null,
@@ -99,19 +106,35 @@ const form = reactive({
   warehouse_limit: null
 })
 
+const categoryOptions = ref([])
+
+const loadCategoryOptions = async () => {
+  try {
+    const res = await getAllTags({ category: '物品分类' })
+    categoryOptions.value = (res.items || [])
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map(t => ({ label: t.name, value: t.value }))
+  } catch (error) {
+    console.error('加载物品分类标签失败:', error)
+  }
+}
+
+onMounted(() => loadCategoryOptions())
+
 // 弹窗打开时同步外部数据到内部 reactive form
 watch(visible, (val) => {
   if (val) {
     Object.assign(form, {
       id: props.initForm.id || null,
       name: props.initForm.name || '',
-      category: props.initForm.category || '',
+      category: props.initForm.category ?? null,
       description: props.initForm.description || '',
       default_price: props.initForm.default_price ?? null,
       juntuan_point: props.initForm.juntuan_point ?? null,
       bag_limit: props.initForm.bag_limit ?? null,
       warehouse_limit: props.initForm.warehouse_limit ?? null
     })
+    loadCategoryOptions()
   }
 })
 

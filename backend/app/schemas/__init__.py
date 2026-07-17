@@ -38,7 +38,7 @@ class TagResponse(TagBase):
 class ItemBase(BaseModel):
     id: int = Field(...)
     name: str = Field(..., max_length=100)
-    category: Optional[str] = None
+    category: Optional[int] = None
     description: Optional[str] = None
     default_price: Optional[int] = None
     juntuan_point: Optional[int] = None
@@ -52,7 +52,7 @@ class ItemCreate(ItemBase):
 
 class ItemUpdate(BaseModel):
     name: Optional[str] = None
-    category: Optional[str] = None
+    category: Optional[int] = None
     description: Optional[str] = None
     default_price: Optional[int] = None
     juntuan_point: Optional[int] = None
@@ -62,6 +62,7 @@ class ItemUpdate(BaseModel):
 
 class ItemResponse(ItemBase):
     id: int
+    category_label: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     

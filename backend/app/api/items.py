@@ -27,6 +27,20 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+def get_item_category_map(db: Session):
+    """获取物品分类标签映射（value -> name）"""
+    tags = db.query(Tag).filter(Tag.category == "物品分类").all()
+    return {tag.value: tag.name for tag in tags}
+
+
+def add_item_category_label(item, category_map):
+    """为物品添加分类名称"""
+    item_dict = item.__dict__ if hasattr(item, '__dict__') else dict(item)
+    category_val = item.category if hasattr(item, 'category') else item.get('category')
+    item_dict['category_label'] = category_map.get(category_val, str(category_val) if category_val else '')
+    return item_dict
+
+
 @router.get("/", response_model=ItemListResponse)
 def list_items(
     skip: int = 0,
@@ -49,11 +63,15 @@ def list_items(
         total = len(candidates)
         # 内存分页
         paged = candidates[skip: skip + limit]
-        return {"total": total, "items": paged}
+    else:
+        total = query.count()
+        paged = query.offset(skip).limit(limit).all()
     
-    total = query.count()
-    items = query.offset(skip).limit(limit).all()
-    return {"total": total, "items": items}
+    # 获取物品分类标签映射，添加分类名称
+    category_map = get_item_category_map(db)
+    items_with_label = [add_item_category_label(item, category_map) for item in paged]
+    
+    return {"total": total, "items": items_with_label}
 
 
 @router.get("/search")
@@ -98,7 +116,8 @@ def get_item(item_id: int, db: Session = Depends(get_db)):
     item = db.query(Item).filter(Item.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="物品不存在")
-    return item
+    category_map = get_item_category_map(db)
+    return add_item_category_label(item, category_map)
 
 
 @router.post("/", response_model=ItemResponse)

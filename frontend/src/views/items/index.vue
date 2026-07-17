@@ -43,7 +43,7 @@
                 <span class="item-link" @click="showDetail(row)">{{ row.name }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="category" label="分类" width="100" />
+            <el-table-column prop="category_label" label="分类" width="100" />
             <el-table-column prop="default_price" label="默认价格" min-width="200">
               <template #default="{ row }">
                 <span v-if="hasPrice(row.default_price, row.juntuan_point)">{{ formatPrice(row.default_price, row.juntuan_point) }}</span>
@@ -147,7 +147,7 @@ const showCreate = () => {
   if (!userStore.isAdmin) { ElMessage.warning('权限不足'); return }
   isCreating.value = true
   editForm.value = {
-    id: null, name: '', category: '', description: '',
+    id: null, name: '', category: null, description: '',
     default_price: null, juntuan_point: null, bag_limit: null, warehouse_limit: null
   }
   editVisible.value = true
@@ -157,7 +157,7 @@ const showEdit = (row) => {
   if (!userStore.isAdmin) { ElMessage.warning('权限不足'); return }
   isCreating.value = false
   editForm.value = {
-    id: row.id, name: row.name, category: row.category || '',
+    id: row.id, name: row.name, category: row.category ?? null,
     description: row.description || '', default_price: row.default_price ?? null,
     juntuan_point: row.juntuan_point ?? null,
     bag_limit: row.bag_limit ?? null, warehouse_limit: row.warehouse_limit ?? null
