@@ -36,7 +36,7 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)):
 
 def get_profession_type_map(db: Session):
     """获取副职类型标签映射（从数据库查询）"""
-    tags = db.query(Tag).filter(Tag.category == "profession_type").all()
+    tags = db.query(Tag).filter(Tag.category == "副职类型").all()
     return {tag.value: tag.name for tag in tags}
 
 

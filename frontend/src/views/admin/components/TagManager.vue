@@ -111,7 +111,7 @@ const pageSize = ref(10)
 const total = ref(0)
 
 const tagForm = ref({
-  id: null, name: '', category: 'profession_type', value: 0, sort_order: 0, description: ''
+  id: null, name: '', category: '副职类型', value: 0, sort_order: 0, description: ''
 })
 
 const rules = {
@@ -168,7 +168,7 @@ const showTagForm = (row = null) => {
     }
   } else {
     tagForm.value = {
-      id: null, name: '', category: 'profession_type', value: 0, sort_order: 0, description: ''
+      id: null, name: '', category: '副职类型', value: 0, sort_order: 0, description: ''
     }
   }
   formVisible.value = true
@@ -188,7 +188,8 @@ const handleSubmit = async () => {
         ElMessage.success('创建成功')
       }
       formVisible.value = false
-      loadTags()
+      currentPage.value = 1
+      await loadTags()
     } catch (error) {
       console.error('操作失败:', error)
       ElMessage.error(error.response?.data?.detail || '操作失败')
@@ -205,7 +206,8 @@ const handleDelete = async (row) => {
     })
     await deleteTag(row.id)
     ElMessage.success('删除成功')
-    loadTags()
+    currentPage.value = 1
+    await loadTags()
   } catch (error) {
     if (error !== 'cancel') console.error('删除失败:', error)
   }

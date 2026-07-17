@@ -110,7 +110,7 @@
       :is-creating="isCreating"
       :init-form="editForm"
       :profession-tags="professionTags"
-      @saved="loadRecipes"
+      @saved="onSaved"
     />
   </div>
 </template>
@@ -234,11 +234,16 @@ const handleDelete = async (row) => {
 
 const loadProfessionTags = async () => {
   try {
-    const res = await getAllTags({ category: 'profession_type' })
+    const res = await getAllTags({ category: '副职类型' })
     professionTags.value = (res.items || []).sort((a, b) => a.sort_order - b.sort_order)
   } catch (error) {
     console.error('加载副职类型标签失败:', error)
   }
+}
+
+const onSaved = () => {
+  loadRecipes()
+  loadProfessionTags()
 }
 
 onMounted(() => {

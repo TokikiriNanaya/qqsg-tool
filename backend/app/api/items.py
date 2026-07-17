@@ -222,11 +222,11 @@ def create_tag(
     current_user: User = Depends(get_current_admin_user)
 ):
     """创建新标签（仅管理员）"""
-    existing_tag = db.query(Tag).filter(Tag.name == tag.name).first()
+    existing_tag = db.query(Tag).filter(Tag.name == tag.name, Tag.category == tag.category).first()
     if existing_tag:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="标签已存在"
+            detail="该分类下已存在相同名称的标签"
         )
     
     existing_value = db.query(Tag).filter(Tag.category == tag.category, Tag.value == tag.value).first()
@@ -265,11 +265,12 @@ def update_tag(
     update_data = tag.dict(exclude_unset=True)
     
     if 'name' in update_data and update_data['name']:
-        dup = db.query(Tag).filter(Tag.name == update_data['name'], Tag.id != tag_id).first()
+        category = update_data.get('category', existing.category)
+        dup = db.query(Tag).filter(Tag.name == update_data['name'], Tag.category == category, Tag.id != tag_id).first()
         if dup:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="标签名称已存在"
+                detail="该分类下已存在相同名称的标签"
             )
     
     if 'value' in update_data and update_data['value'] is not None:
