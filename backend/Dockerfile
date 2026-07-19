@@ -1,21 +1,3 @@
-# ============================================
-# 阶段1：构建前端
-# ============================================
-FROM node:18-alpine AS frontend-build
-
-WORKDIR /frontend
-
-# 复制前端依赖文件并安装
-COPY ../frontend/package*.json ./
-RUN npm config set registry https://registry.npmmirror.com && npm ci
-
-# 复制前端代码并构建
-COPY ../frontend/ ./
-RUN npm run build
-
-# ============================================
-# 阶段2：Python 后端 + 前端静态文件
-# ============================================
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -26,17 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制后端依赖文件并安装
+# 复制依赖文件并安装
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# 复制后端应用代码
+# 复制应用代码
 COPY . .
 
-# 复制前端构建产物到静态目录
-COPY --from=frontend-build /frontend/dist /app/static
-
-# 启动脚本（含数据库迁移）
+# 启动脚本（含数据库初始化/迁移/数据同步）
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 

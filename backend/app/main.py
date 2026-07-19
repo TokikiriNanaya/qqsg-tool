@@ -54,8 +54,6 @@ def health_check():
 # ============================================
 # 静态文件服务（前端 SPA）
 # ============================================
-import os
-
 static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 
 if os.path.isdir(static_dir):

@@ -7,7 +7,7 @@ import os
 import logging
 import subprocess
 from sqlalchemy import text, inspect
-from app.core.database import SessionLocal, engine
+from app.core.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +126,6 @@ def sync_official_data():
             logger.info(f"同步数据文件: {filename}")
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
-
-            # 跳过纯 DDL 文件（如建表语句，仅首次初始化时在 init_database 中执行）
-            if filename == "00_init.sql":
-                logger.info(f"  跳过建表文件（仅在首次初始化时执行）")
-                continue
 
             # 将 INSERT INTO 替换为 INSERT IGNORE INTO（避免重复插入报错）
             content = content.replace('INSERT INTO', 'INSERT IGNORE INTO')
