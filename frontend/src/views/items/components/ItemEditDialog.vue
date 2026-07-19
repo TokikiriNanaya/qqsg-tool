@@ -74,7 +74,7 @@
 <script setup>
 import { computed, ref, reactive, watch, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { createItem, updateItem, getAllTags } from '@/api/item'
+import { createItem, updateItem, getDict } from '@/api/item'
 import { ElMessage } from 'element-plus'
 
 const userStore = useUserStore()
@@ -110,12 +110,12 @@ const categoryOptions = ref([])
 
 const loadCategoryOptions = async () => {
   try {
-    const res = await getAllTags({ category: '物品分类' })
-    categoryOptions.value = (res.items || [])
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map(t => ({ label: t.name, value: t.value }))
+    const res = await getDict('item_category')
+    categoryOptions.value = (res || [])
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      .map(t => ({ label: t.label, value: t.code }))
   } catch (error) {
-    console.error('加载物品分类标签失败:', error)
+    console.error('加载物品分类失败:', error)
   }
 }
 

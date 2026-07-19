@@ -18,9 +18,9 @@
             <el-select v-model="form.profession_type" placeholder="选择副职类型" class="full-width">
               <el-option
                 v-for="tag in professionTags"
-                :key="tag.value"
-                :label="tag.name"
-                :value="tag.value"
+                :key="tag.code"
+                :label="tag.label"
+                :value="tag.code"
               />
             </el-select>
           </el-form-item>

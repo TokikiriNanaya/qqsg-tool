@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Enum, UniqueConstraint, SmallInteger
 from datetime import datetime
 import enum
 from app.core.database import Base
@@ -24,26 +24,25 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
-class Tag(Base):
-    """标签模型"""
-    __tablename__ = "tags"
+class SysDict(Base):
+    """通用字典表模型"""
+    __tablename__ = "sys_dict"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(50), nullable=False, comment="标签名称")
-    category = Column(String(50), nullable=False, comment="标签分类（如：获取来源、用途、profession_type）")
-    value = Column(Integer, default=0, comment="标签值（用于数字映射，如副职类型）")
-    sort_order = Column(Integer, default=0, comment="排序号（用于控制显示顺序）")
-    description = Column(Text, comment="标签描述")
+    dict_type = Column(String(50), nullable=False, comment="字典分类标识（如：item_category、job_type）")
+    code = Column(Integer, nullable=False, default=0, comment="字典编码（业务唯一键）")
+    label = Column(String(50), nullable=False, comment="字典显示名称")
+    sort_order = Column(Integer, default=0, comment="排序号")
+    remark = Column(Text, comment="备注")
+    status = Column(SmallInteger, default=1, comment="状态（1=启用，0=禁用）")
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint('name', 'category', name='uq_tag_name_category'),
+        UniqueConstraint('dict_type', 'code', name='uq_dict_type_code'),
     )
 
-    # 关系 - 多对多（已废弃：items不再使用tags）
-    # items = relationship("Item", secondary="item_tags", back_populates="tags")
 
 
 class Item(Base):
@@ -52,7 +51,7 @@ class Item(Base):
 
     id = Column(Integer, primary_key=True, nullable=False, comment="游戏内ID")
     name = Column(String(100), nullable=False, comment="物品名称")
-    category = Column(Integer, default=None, comment="物品分类（对应tags表中category='物品分类'的标签value值）")
+    category = Column(Integer, default=None, comment="物品分类（对应sys_dict表中dict_type='item_category'的code值）")
     description = Column(Text, comment="物品简介")
     default_price = Column(Integer, default=None, comment="默认价格(三国币)")
     juntuan_point = Column(Integer, default=None, comment="军团点")

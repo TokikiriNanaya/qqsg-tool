@@ -1,37 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 from app.models import UserRole
-
-
-# 标签相关Schema
-class TagBase(BaseModel):
-    name: str = Field(..., max_length=50)
-    category: str = Field(..., max_length=50)
-    value: Optional[int] = 0
-    sort_order: Optional[int] = 0
-    description: Optional[str] = None
-
-
-class TagCreate(TagBase):
-    pass
-
-
-class TagUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[str] = None
-    value: Optional[int] = None
-    sort_order: Optional[int] = None
-    description: Optional[str] = None
-
-
-class TagResponse(TagBase):
-    id: int
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    
-    class Config:
-        from_attributes = True
 
 
 # 物品相关Schema

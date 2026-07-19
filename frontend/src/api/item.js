@@ -43,45 +43,47 @@ export function deleteItem(id) {
   })
 }
 
-// 获取所有标签
-export function getAllTags(params) {
+// ===== 字典接口 =====
+
+// 获取指定类型的字典列表（公开，走缓存）
+export function getDict(dictType) {
   return request({
-    url: '/items/tags/all',
+    url: `/dict/${dictType}`,
+    method: 'get'
+  })
+}
+
+// 获取所有字典项（管理员）
+export function getAllDicts(params) {
+  return request({
+    url: '/dict/',
     method: 'get',
     params
   })
 }
 
-// 获取单个标签详情
-export function getTagById(id) {
+// 创建字典项（管理员）
+export function createDict(data) {
   return request({
-    url: `/items/tags/${id}`,
-    method: 'get'
-  })
-}
-
-// 创建标签（仅管理员）
-export function createTag(data) {
-  return request({
-    url: '/items/tags/',
+    url: '/dict/',
     method: 'post',
     data
   })
 }
 
-// 更新标签（仅管理员）
-export function updateTag(id, data) {
+// 更新字典项（管理员）
+export function updateDict(id, data) {
   return request({
-    url: `/items/tags/${id}`,
+    url: `/dict/${id}`,
     method: 'put',
     data
   })
 }
 
-// 删除标签（仅管理员）
-export function deleteTag(id) {
+// 删除字典项（管理员）
+export function deleteDict(id) {
   return request({
-    url: `/items/tags/${id}`,
+    url: `/dict/${id}`,
     method: 'delete'
   })
 }

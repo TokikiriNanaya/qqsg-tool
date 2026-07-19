@@ -7,7 +7,7 @@
         <h1>管理后台</h1>
 
         <el-tabs v-model="activeTab">
-          <el-tab-pane label="标签管理" name="tags">
+          <el-tab-pane label="字典管理" name="tags">
             <TagManager />
           </el-tab-pane>
           <el-tab-pane label="用户管理" name="users">

@@ -8,8 +8,9 @@ from typing import Optional
 from pydantic import BaseModel
 
 from app.core.database import get_db
+from app.core.dict_cache import dict_cache
 from app.core.pinyin import match_pinyin
-from app.models import Recipe, Item, Tag, User, UserRole
+from app.models import Recipe, Item, User, UserRole
 from app.api.auth import get_current_user_optional
 from app.api.recipes import add_material_names, add_profession_type_label, get_profession_type_map
 
@@ -25,7 +26,6 @@ class ShareRecipeItem(BaseModel):
     match_type: str  # "exact" 完全匹配 或 "partial" 部分匹配
     detail_text: str  # 配方详情文本
     detail_url: str   # 详情页链接
-
 
 class ShareItemEntry(BaseModel):
     """分享搜索结果中的物品条目"""
@@ -50,9 +50,9 @@ def format_price(default_price, juntuan_point):
     """格式化价格展示
     规则：
     - 都为空或0 → 返回空字符串
-    - 仅有三国币 → "100三国币"
-    - 仅有军团点 → "100军团点*0.2=20三国币"
-    - 两者都有 → "100三国币+100军团点*0.2=120三国币"
+    - 仅有三国币 → "100"
+    - 仅有军团点 → "100*0.2=20"
+    - 两者都有 → "100+100*0.2=120"
     """
     dp = default_price or 0
     jp = juntuan_point or 0
@@ -123,7 +123,8 @@ def format_item_detail(item) -> str:
     lines = [f"【{item.name}】"]
 
     if item.category:
-        lines.append(f"分类: {item.category}")
+        cat_label = dict_cache.get_label("item_category", item.category)
+        lines.append(f"分类: {cat_label or item.category}")
 
     if item.description:
         lines.append(f"描述: {item.description}")
@@ -159,7 +160,7 @@ def share_search(
     4. 返回文本详情 + 详情页链接
     """
     result = ShareSearchResponse(keyword=keyword)
-    profession_map = get_profession_type_map(db)
+    profession_map = get_profession_type_map()
 
     # 前端地址，从请求参数获取，去掉末尾斜杠
     base_url = base_url.rstrip('/')
@@ -173,8 +174,8 @@ def share_search(
 
     all_recipes = all_recipes.all()
 
-    recipe_exact_matches = []
-    recipe_partial_matches = []
+    recipe_exact_matches = []  # 精确匹配的 recipe_dict 列表
+    recipe_partial_matches = []  # 部分匹配的 recipe_dict 列表
 
     for recipe in all_recipes:
         if match_pinyin(recipe.name, keyword):
@@ -192,10 +193,12 @@ def share_search(
     for r in sorted_recipes:
         detail_text = format_recipe_detail(r)
         detail_url = f"{base_url}/recipes/{r['id']}"
+        # 判断 match_type：通过检查 r 在哪个列表中
+        match_type = "exact" if r in recipe_exact_matches else "partial"
         result.recipes.append(ShareRecipeItem(
             id=r['id'],
             name=r['name'],
-            match_type="exact" if r in recipe_exact_matches else "partial",
+            match_type=match_type,
             detail_text=detail_text,
             detail_url=detail_url,
         ))
@@ -218,10 +221,11 @@ def share_search(
     for item in sorted_items:
         detail_text = format_item_detail(item)
         detail_url = f"{base_url}/items/{item.id}" if base_url else f"/items/{item.id}"
+        match_type = "exact" if item in item_exact_matches else "partial"
         result.items.append(ShareItemEntry(
             id=item.id,
             name=item.name,
-            match_type="exact" if item in item_exact_matches else "partial",
+            match_type=match_type,
             detail_text=detail_text,
             detail_url=detail_url,
         ))

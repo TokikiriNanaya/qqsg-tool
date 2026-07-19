@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 from app.core.database import get_db
-from app.models import Item, Tag, User, UserRole, Recipe
-from app.schemas import ItemCreate, ItemUpdate, ItemResponse, TagCreate, TagUpdate
+from app.core.dict_cache import dict_cache
+from app.models import Item, User, UserRole, Recipe
+from app.schemas import ItemCreate, ItemUpdate, ItemResponse
 from app.api.auth import get_current_user
 from app.core.pinyin import match_pinyin
 
@@ -27,10 +28,9 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-def get_item_category_map(db: Session):
-    """获取物品分类标签映射（value -> name）"""
-    tags = db.query(Tag).filter(Tag.category == "物品分类").all()
-    return {tag.value: tag.name for tag in tags}
+def get_item_category_map():
+    """获取物品分类映射（code -> label），从缓存获取"""
+    return dict_cache.get_code_label_map("item_category")
 
 
 def add_item_category_label(item, category_map):
@@ -68,7 +68,7 @@ def list_items(
         paged = query.offset(skip).limit(limit).all()
     
     # 获取物品分类标签映射，添加分类名称
-    category_map = get_item_category_map(db)
+    category_map = get_item_category_map()
     items_with_label = [add_item_category_label(item, category_map) for item in paged]
     
     return {"total": total, "items": items_with_label}
@@ -116,7 +116,7 @@ def get_item(item_id: int, db: Session = Depends(get_db)):
     item = db.query(Item).filter(Item.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="物品不存在")
-    category_map = get_item_category_map(db)
+    category_map = get_item_category_map()
     return add_item_category_label(item, category_map)
 
 
@@ -201,126 +201,3 @@ def delete_item(
     return {"message": "物品删除成功"}
 
 
-@router.get("/tags/all")
-def get_all_tags(
-    skip: int = 0,
-    limit: int = 100,
-    category: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    """获取所有标签（所有用户可访问）"""
-    query = db.query(Tag)
-    if category:
-        query = query.filter(Tag.category == category)
-    
-    # 先按分类排序，再按排序号排序
-    query = query.order_by(Tag.category.asc(), Tag.sort_order.asc())
-    
-    total = query.count()
-    tags = query.offset(skip).limit(limit).all()
-    
-    return {
-        "total": total,
-        "items": tags
-    }
-
-
-@router.get("/tags/{tag_id}")
-def get_tag(tag_id: int, db: Session = Depends(get_db)):
-    """获取单个标签详情（所有用户可访问）"""
-    tag = db.query(Tag).filter(Tag.id == tag_id).first()
-    if not tag:
-        raise HTTPException(status_code=404, detail="标签不存在")
-    return tag
-
-
-@router.post("/tags/")
-def create_tag(
-    tag: TagCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
-):
-    """创建新标签（仅管理员）"""
-    existing_tag = db.query(Tag).filter(Tag.name == tag.name, Tag.category == tag.category).first()
-    if existing_tag:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="该分类下已存在相同名称的标签"
-        )
-    
-    existing_value = db.query(Tag).filter(Tag.category == tag.category, Tag.value == tag.value).first()
-    if existing_value and tag.value != 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="该分类下已存在相同的值"
-        )
-    
-    new_tag = Tag(
-        name=tag.name,
-        category=tag.category,
-        value=tag.value or 0,
-        sort_order=tag.sort_order or 0,
-        description=tag.description
-    )
-    
-    db.add(new_tag)
-    db.commit()
-    db.refresh(new_tag)
-    return new_tag
-
-
-@router.put("/tags/{tag_id}")
-def update_tag(
-    tag_id: int,
-    tag: TagUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
-):
-    """更新标签（仅管理员）"""
-    existing = db.query(Tag).filter(Tag.id == tag_id).first()
-    if not existing:
-        raise HTTPException(status_code=404, detail="标签不存在")
-    
-    update_data = tag.dict(exclude_unset=True)
-    
-    if 'name' in update_data and update_data['name']:
-        category = update_data.get('category', existing.category)
-        dup = db.query(Tag).filter(Tag.name == update_data['name'], Tag.category == category, Tag.id != tag_id).first()
-        if dup:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="该分类下已存在相同名称的标签"
-            )
-    
-    if 'value' in update_data and update_data['value'] is not None:
-        category = update_data.get('category', existing.category)
-        dup_val = db.query(Tag).filter(Tag.category == category, Tag.value == update_data['value'], Tag.id != tag_id).first()
-        if dup_val:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="该分类下已存在相同的值"
-            )
-    
-    for key, value in update_data.items():
-        if value is not None:
-            setattr(existing, key, value)
-    
-    db.commit()
-    db.refresh(existing)
-    return existing
-
-
-@router.delete("/tags/{tag_id}")
-def delete_tag(
-    tag_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
-):
-    """删除标签（仅管理员）"""
-    tag = db.query(Tag).filter(Tag.id == tag_id).first()
-    if not tag:
-        raise HTTPException(status_code=404, detail="标签不存在")
-    
-    db.delete(tag)
-    db.commit()
-    return {"message": "标签删除成功"}

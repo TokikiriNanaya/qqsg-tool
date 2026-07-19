@@ -27,9 +27,9 @@
                 <el-option label="全部" value="" />
                 <el-option
                   v-for="tag in professionTags"
-                  :key="tag.value"
-                  :label="tag.name"
-                  :value="tag.value"
+                  :key="tag.code"
+                  :label="tag.label"
+                  :value="tag.code"
                 />
               </el-select>
             </el-col>
@@ -122,7 +122,7 @@ import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import RecipeEditDialog from './components/RecipeEditDialog.vue'
 import { getRecipes, deleteRecipe } from '@/api/recipe'
-import { getAllTags } from '@/api/item'
+import { getDict } from '@/api/item'
 import { useUserStore } from '@/stores/user'
 import { useSearchDebounce } from '@/composables/useSearchDebounce'
 import { getProfessionType } from '@/composables/useProfession'
@@ -234,10 +234,10 @@ const handleDelete = async (row) => {
 
 const loadProfessionTags = async () => {
   try {
-    const res = await getAllTags({ category: '副职类型' })
-    professionTags.value = (res.items || []).sort((a, b) => a.sort_order - b.sort_order)
+    const res = await getDict('job_type')
+    professionTags.value = (res || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
   } catch (error) {
-    console.error('加载副职类型标签失败:', error)
+    console.error('加载副职类型失败:', error)
   }
 }
 

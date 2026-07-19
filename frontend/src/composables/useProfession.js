@@ -1,17 +1,13 @@
 /**
  * 副职类型相关工具函数
+ * 注意：副职类型数据来自字典接口 /api/dict/job_type，不要硬编码
  */
 
-// 副职类型对应的 Element Plus tag 类型
+// 副职类型对应的 Element Plus tag 颜色（根据 code 哈希）
 export function getProfessionType(type) {
-  const typeMap = {
-    1: 'success',   // 庖丁
-    2: 'primary',   // 工匠
-    3: 'warning',   // 巧匠
-    4: 'danger',    // 玉匠
-    5: 'info'       // 书匠
-  }
-  return typeMap[type] || 'default'
+  const colorMap = ['', 'success', 'primary', 'warning', 'danger']
+  if (!type) return 'default'
+  return colorMap[Math.abs(type) % colorMap.length] || 'info'
 }
 
 // 副职等级（默认21级）
