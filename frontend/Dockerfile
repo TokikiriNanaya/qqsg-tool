@@ -1,23 +1,21 @@
 # 阶段1：构建前端
-FROM node:18-alpine AS build
+FROM docker.m.daocloud.io/library/node:18-alpine AS build
 
 WORKDIR /app
 
-# 复制依赖文件并安装
+# 使用国内 npm 源
 COPY package*.json ./
-RUN npm config set registry https://registry.npmmirror.com && npm ci
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm ci
 
-# 复制前端代码并构建
+# 复制源码并构建
 COPY . .
 RUN npm run build
 
-# 阶段2：使用 Nginx 提供静态文件服务
-FROM nginx:alpine
+# 阶段2：使用 Nginx 提供静态文件
+FROM docker.m.daocloud.io/library/nginx:alpine
 
-# 复制构建产物
 COPY --from=build /app/dist /usr/share/nginx/html
-
-# 复制 Nginx 配置
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

@@ -44,7 +44,27 @@ qqsg-tool/
 
 ## 快速开始（Docker 部署）
 
-**推荐方式**，无需手动配置 Python/Node 环境：
+**推荐方式**，无需手动配置 Python/Node 环境。
+
+### 前置：配置 Docker 镜像加速（国内必做）
+
+由于 `node:18-alpine` 和 `nginx:alpine` 等基础镜像需要从 Docker Hub 拉取，国内直接拉取可能很慢或卡住。请先配置镜像加速器：
+
+**Docker Desktop（Windows/macOS）**：
+打开 Settings → Docker Engine，在 `registry-mirrors` 中添加：
+```json
+{
+  "registry-mirrors": [
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me"
+  ]
+}
+```
+然后点击 "Apply & Restart"。
+
+**Linux**：编辑 `/etc/docker/daemon.json`，添加同上配置后执行 `sudo systemctl restart docker`。
+
+### 构建启动
 
 ```bash
 # 构建并启动所有服务
