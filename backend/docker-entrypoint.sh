@@ -30,12 +30,8 @@ except Exception as e:
     sleep 2
 done
 
-echo "=== 第一步：表结构迁移 ==="
-python -m alembic revision --autogenerate -m "auto_migration"
-python -m alembic upgrade head
-
-echo "=== 第二步：同步官方数据 ==="
-python -c "from app.core.data_sync import sync_official_data; sync_official_data()"
+echo "=== 数据库生命周期管理 ==="
+python -c "from app.core.data_sync import bootstrap_database; bootstrap_database()"
 
 echo "=== 启动应用 ==="
 exec python run.py
