@@ -3,7 +3,9 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # 安装系统依赖（mysqlclient 需要 gcc 和 libmariadb-dev）
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# 替换为清华 apt 镜像源，避免构建时卡住
+RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     default-libmysqlclient-dev \
     && rm -rf /var/lib/apt/lists/*
