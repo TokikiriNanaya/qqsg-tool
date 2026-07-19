@@ -1,0 +1,10 @@
+SET NAMES utf8mb4;
+
+INSERT INTO `item_tags` VALUES (18035, 1);
+INSERT INTO `item_tags` VALUES (18035, 2);
+INSERT INTO `item_tags` VALUES (18035, 3);
+INSERT INTO `item_tags` VALUES (18035, 4);
+INSERT INTO `item_tags` VALUES (18035, 5);
+INSERT INTO `item_tags` VALUES (18035, 6);
+INSERT INTO `item_tags` VALUES (18035, 7);
+INSERT INTO `item_tags` VALUES (18035, 8);

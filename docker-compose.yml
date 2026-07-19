@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: qqsg-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: qqsg
+      MYSQL_USER: qqsg
+      MYSQL_PASSWORD: qqsg
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/init:/docker-entrypoint-initdb.d   # 仅首次初始化时执行建表
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "qqsg", "-pqqsg"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: qqsg-backend
+    restart: always
+    environment:
+      APP_NAME: "QQ三国工具"
+      APP_VERSION: "1.0.0"
+      DEBUG: "false"
+      DATABASE_URL: "mysql+pymysql://qqsg:qqsg@mysql:3306/qqsg?charset=utf8mb4"
+      SECRET_KEY: "0d000721"
+      ALGORITHM: "HS256"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      ALLOWED_ORIGINS: '["*"]'
+      TZ: Asia/Shanghai
+    volumes:
+      - ./sql/data:/app/sql/data   # 官方数据文件，启动时自动同步
+    ports:
+      - "9940:9940"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: qqsg-frontend
+    restart: always
+    ports:
+      - "9939:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

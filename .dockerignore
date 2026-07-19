@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Environment (使用 docker-compose 环境变量)
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# SQL 数据文件（docker-compose volume 挂载，无需打包进镜像）
+# sql/data/ 目录保留在宿主机，通过 volume 挂载到后端容器
