@@ -1,5 +1,5 @@
 # 阶段1：构建前端
-FROM docker.m.daocloud.io/library/node:18-alpine AS build
+FROM docker.1ms.run/library/node:18-alpine AS build
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY . .
 RUN npm run build
 
 # 阶段2：使用 Nginx 提供静态文件
-FROM docker.m.daocloud.io/library/nginx:alpine
+FROM docker.1ms.run/library/nginx:alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
