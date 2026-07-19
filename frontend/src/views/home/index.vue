@@ -1,51 +1,45 @@
 <template>
   <div class="home">
-    <el-container>
-      <el-header>
-        <Header />
-      </el-header>
+    <Header />
 
-      <el-main>
-        <div class="hero-section">
-          <h1>QQ三国工具</h1>
-          <p class="subtitle">快速查询游戏内所有可制作物品的配方</p>
+    <el-main>
+      <div class="hero-section">
+        <h1>QQ三国工具</h1>
+        <p class="subtitle">快速查询游戏内所有可制作物品的配方</p>
 
-          <el-button type="primary" size="large" @click="$router.push('/recipes')">
-            开始查询
-          </el-button>
-        </div>
+        <el-button type="primary" size="large" @click="$router.push('/recipes')">
+          开始查询
+        </el-button>
+      </div>
 
-        <div class="features">
-          <el-row :gutter="20">
-            <el-col :span="8">
-              <el-card>
-                <el-icon size="40"><Search /></el-icon>
-                <h3>快速搜索</h3>
-                <p>支持按名称、分类快速查找配方</p>
-              </el-card>
-            </el-col>
-            <el-col :span="8">
-              <el-card>
-                <el-icon size="40"><List /></el-icon>
-                <h3>详细材料清单</h3>
-                <p>查看每个配方所需的完整材料列表</p>
-              </el-card>
-            </el-col>
-            <el-col :span="8">
-              <el-card>
-                <el-icon size="40"><User /></el-icon>
-                <h3>用户贡献</h3>
-                <p>注册用户可以分享自己的配方发现</p>
-              </el-card>
-            </el-col>
-          </el-row>
-        </div>
-      </el-main>
+      <div class="features">
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-card>
+              <el-icon size="40"><Search /></el-icon>
+              <h3>快速搜索</h3>
+              <p>支持按名称、分类快速查找配方</p>
+            </el-card>
+          </el-col>
+          <el-col :span="8">
+            <el-card>
+              <el-icon size="40"><List /></el-icon>
+              <h3>详细材料清单</h3>
+              <p>查看每个配方所需的完整材料列表</p>
+            </el-card>
+          </el-col>
+          <el-col :span="8">
+            <el-card>
+              <el-icon size="40"><User /></el-icon>
+              <h3>用户贡献</h3>
+              <p>注册用户可以分享自己的配方发现</p>
+            </el-card>
+          </el-col>
+        </el-row>
+      </div>
+    </el-main>
 
-      <el-footer>
-        <Footer />
-      </el-footer>
-    </el-container>
+    <Footer />
   </div>
 </template>
 
@@ -57,26 +51,21 @@ import Footer from '@/components/Footer.vue'
 <style scoped>
 .home {
   min-height: 100vh;
-}
-
-.el-container {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.el-header {
-  padding: 0;
-  flex-shrink: 0;
-}
-
 .el-main {
   flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .hero-section {
   text-align: center;
-  padding: 80px 20px;
+  padding: 60px 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 10px;
@@ -97,7 +86,6 @@ import Footer from '@/components/Footer.vue'
 .features {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
 }
 
 .el-card {
@@ -116,9 +104,5 @@ import Footer from '@/components/Footer.vue'
 
 .el-icon {
   color: #667eea;
-}
-
-.el-footer {
-  padding: 0;
 }
 </style>

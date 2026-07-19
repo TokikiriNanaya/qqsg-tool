@@ -9,10 +9,10 @@
         <!-- 搜索和筛选 -->
         <el-card class="search-card">
           <el-row :gutter="20">
-            <el-col :span="12">
+            <el-col :span="8">
               <el-input
                 v-model="searchQuery"
-                placeholder="搜索物品名称（支持拼音首字母，如 gh=钙化大骨）"
+                placeholder="搜索物品名称（支持拼音首字母）"
                 clearable
                 @input="handleSearchInput"
                 @clear="loadItems"
@@ -22,10 +22,26 @@
                 </template>
               </el-input>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="4">
+              <el-select
+                v-model="categoryFilter"
+                placeholder="选择分类"
+                clearable
+                @change="loadItems"
+              >
+                <el-option label="全部分类" value="" />
+                <el-option
+                  v-for="cat in categoryTags"
+                  :key="cat.code"
+                  :label="cat.label"
+                  :value="cat.code"
+                />
+              </el-select>
+            </el-col>
+            <el-col :span="4">
               <el-button type="primary" @click="loadItems">搜索</el-button>
             </el-col>
-            <el-col v-if="userStore.isAdmin" :span="6" class="admin-actions">
+            <el-col v-if="userStore.isAdmin" :span="4" class="admin-actions">
               <el-button type="success" @click="showCreate">
                 <el-icon><Plus /></el-icon>
                 新增物品
@@ -96,7 +112,7 @@ import { useRouter } from 'vue-router'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import ItemEditDialog from './components/ItemEditDialog.vue'
-import { getItems, deleteItem } from '@/api/item'
+import { getItems, deleteItem, getDict } from '@/api/item'
 import { useUserStore } from '@/stores/user'
 import { useSearchDebounce } from '@/composables/useSearchDebounce'
 import { formatPrice, hasPrice } from '@/composables/usePriceFormat'
@@ -111,6 +127,10 @@ const loading = ref(false)
 const searchQuery = ref('')
 const pageSize = ref(10)
 const total = ref(0)
+
+// 分类筛选
+const categoryTags = ref([])
+const categoryFilter = ref('')
 
 // 编辑弹窗
 const editVisible = ref(false)
@@ -128,6 +148,7 @@ async function loadItems() {
       limit: pageSize.value
     }
     if (searchQuery.value) params.name = searchQuery.value
+    if (categoryFilter.value !== '') params.category = categoryFilter.value
     const res = await getItems(params)
     items.value = res.items || []
     total.value = res.total || 0
@@ -179,8 +200,14 @@ const handleDelete = async (row) => {
   }
 }
 
+const loadCategoryTags = async () => {
+  const res = await getDict('item_category')
+  categoryTags.value = (res || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+}
+
 onMounted(() => {
   loadItems()
+  loadCategoryTags()
 })
 </script>
 

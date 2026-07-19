@@ -46,10 +46,15 @@ def list_items(
     skip: int = 0,
     limit: int = 100,
     name: Optional[str] = None,
+    category: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """获取物品列表（所有用户可访问）"""
     query = db.query(Item)
+
+    # 按分类筛选
+    if category is not None:
+        query = query.filter(Item.category == category)
     
     # 按名称搜索（支持拼音首字母、全拼）
     if name:

@@ -52,6 +52,8 @@
 
       <div class="links">
         <router-link to="/login">已有账号？立即登录</router-link>
+        <span class="separator">|</span>
+        <router-link to="/">返回首页</router-link>
       </div>
     </el-card>
   </div>
@@ -155,5 +157,10 @@ const handleRegister = async () => {
 
 .links a:hover {
   text-decoration: underline;
+}
+
+.separator {
+  margin: 0 8px;
+  color: #c0c4cc;
 }
 </style>

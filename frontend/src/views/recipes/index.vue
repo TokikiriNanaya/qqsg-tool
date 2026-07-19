@@ -22,7 +22,7 @@
                 </template>
               </el-input>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="4">
               <el-select v-model="professionType" placeholder="选择副职类型" clearable @change="loadRecipes">
                 <el-option label="全部" value="" />
                 <el-option
