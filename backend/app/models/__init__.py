@@ -24,6 +24,14 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class ItemTag(Base):
+    """物品标签关联表"""
+    __tablename__ = "item_tags"
+
+    item_id = Column(Integer, primary_key=True, nullable=False)
+    tag_id = Column(Integer, primary_key=True, nullable=False)
+
+
 class SysDict(Base):
     """通用字典表模型"""
     __tablename__ = "sys_dict"
@@ -38,6 +46,14 @@ class SysDict(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ItemTag(Base):
+    """物品标签关联表"""
+    __tablename__ = "item_tags"
+
+    item_id = Column(Integer, primary_key=True, nullable=False)
+    tag_id = Column(Integer, primary_key=True, nullable=False)
 
     __table_args__ = (
         UniqueConstraint('dict_type', 'code', name='uq_dict_type_code'),
@@ -60,6 +76,14 @@ class Item(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ItemTag(Base):
+    """物品标签关联表"""
+    __tablename__ = "item_tags"
+
+    item_id = Column(Integer, primary_key=True, nullable=False)
+    tag_id = Column(Integer, primary_key=True, nullable=False)
 
 
 class Recipe(Base):
@@ -104,3 +128,19 @@ class Recipe(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ItemTag(Base):
+    """物品标签关联表"""
+    __tablename__ = "item_tags"
+
+    item_id = Column(Integer, primary_key=True, nullable=False)
+    tag_id = Column(Integer, primary_key=True, nullable=False)
+
+
+class ItemTag(Base):
+    """物品标签关联表"""
+    __tablename__ = "item_tags"
+
+    item_id = Column(Integer, primary_key=True, nullable=False)
+    tag_id = Column(Integer, primary_key=True, nullable=False)
